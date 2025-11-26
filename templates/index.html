@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRT 파일 처리 파이프라인</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <header class="header">
+            <h1>📝 SRT 파일 처리 파이프라인</h1>
+            <p class="subtitle">TXT 변환 → 파일 복제 → 단어 수정 → 화자명 변경</p>
+        </header>
+
+        <!-- 메인 컨텐츠 -->
+        <main class="main-content">
+            <!-- 1-1: TXT → SRT 변환 섹션 -->
+            <section class="pipeline-section" id="section-1-1">
+                <div class="section-header">
+                    <h2>1-1. TXT → SRT 변환</h2>
+                    <span class="section-status" id="status-1-1">대기 중</span>
+                </div>
+                
+                <div class="section-content">
+                    <div class="form-section">
+                        <label for="txt_file" class="form-label">
+                            <span class="label-text">📄 TXT 파일 업로드</span>
+                        </label>
+                        <div class="file-upload-wrapper">
+                            <input 
+                                type="file" 
+                                id="txt_file" 
+                                accept=".txt" 
+                                class="file-input"
+                            >
+                            <label for="txt_file" class="file-upload-label">
+                                <span class="file-icon">📁</span>
+                                <span id="txt-file-name">TXT 파일을 선택하세요</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="button" id="btn-convert" class="btn-primary">
+                        🚀 SRT 변환 실행
+                    </button>
+
+                    <div class="result-preview" id="result-1-1" style="display: none;">
+                        <h3>변환 결과:</h3>
+                        <div class="save-info">
+                            <span class="save-icon">📁</span>
+                            <span>저장 위치: <strong id="saved-path-1-1"></strong></span>
+                        </div>
+                        <pre id="preview-1-1"></pre>
+                        <button type="button" class="btn-download" onclick="downloadFile('1-1')">
+                            💾 파일 다운로드
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 1-2: SRT 파일 복제 섹션 -->
+            <section class="pipeline-section" id="section-1-2">
+                <div class="section-header">
+                    <h2>1-2. SRT 파일 복제 (다국어 파일 생성)</h2>
+                    <span class="section-status" id="status-1-2">대기 중</span>
+                </div>
+                
+                <div class="section-content">
+                    <div class="form-section">
+                        <label for="srt_file_1_2" class="form-label">
+                            <span class="label-text">📄 SRT 파일 업로드</span>
+                        </label>
+                        <div class="file-upload-wrapper">
+                            <input 
+                                type="file" 
+                                id="srt_file_1_2" 
+                                accept=".srt" 
+                                class="file-input"
+                            >
+                            <label for="srt_file_1_2" class="file-upload-label">
+                                <span class="file-icon">📁</span>
+                                <span id="srt-file-name-1-2">SRT 파일을 선택하세요</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <label for="duplicate_count" class="form-label">
+                            <span class="label-text">복제 개수</span>
+                        </label>
+                        <input 
+                            type="number" 
+                            id="duplicate_count" 
+                            class="form-input" 
+                            value="1" 
+                            min="1" 
+                            max="10"
+                        >
+                    </div>
+
+                    <button type="button" id="btn-duplicate" class="btn-primary">
+                        📑 파일 복제 실행
+                    </button>
+
+                    <div class="result-preview" id="result-1-2" style="display: none;">
+                        <h3>복제된 파일 목록:</h3>
+                        <div class="save-info">
+                            <span class="save-icon">📁</span>
+                            <span>저장 위치: <strong id="saved-path-1-2"></strong></span>
+                        </div>
+                        <div id="duplicated-files-list"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2-1: 단어 수정 섹션 -->
+            <section class="pipeline-section" id="section-2-1">
+                <div class="section-header">
+                    <h2>2-1. 단어 수정</h2>
+                    <span class="section-status" id="status-2-1">대기 중</span>
+                </div>
+                
+                <div class="section-content">
+                    <div class="form-section">
+                        <label for="srt_file_2_1" class="form-label">
+                            <span class="label-text">📄 SRT 파일 업로드</span>
+                        </label>
+                        <div class="file-upload-wrapper">
+                            <input 
+                                type="file" 
+                                id="srt_file_2_1" 
+                                accept=".srt" 
+                                class="file-input"
+                            >
+                            <label for="srt_file_2_1" class="file-upload-label">
+                                <span class="file-icon">📁</span>
+                                <span id="srt-file-name-2-1">SRT 파일을 선택하세요</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <label class="form-label">
+                            <span class="label-text">단어 교체 규칙</span>
+                        </label>
+                        <div id="replacement-rules-2-1">
+                            <div class="replacement-row">
+                                <input type="text" class="form-input-small" placeholder="찾을 단어" data-type="old">
+                                <span class="arrow">→</span>
+                                <input type="text" class="form-input-small" placeholder="바꿀 단어" data-type="new">
+                                <button type="button" class="btn-remove" onclick="removeRule(this)">×</button>
+                            </div>
+                        </div>
+                        <button type="button" id="btn-add-rule-2-1" class="btn-link">+ 규칙 추가</button>
+                    </div>
+
+                    <button type="button" id="btn-replace" class="btn-primary">
+                        ✏️ 단어 수정 실행
+                    </button>
+
+                    <div class="result-preview" id="result-2-1" style="display: none;">
+                        <h3>수정 결과:</h3>
+                        <div class="save-info">
+                            <span class="save-icon">📁</span>
+                            <span>저장 위치: <strong id="saved-path-2-1"></strong></span>
+                        </div>
+                        <div id="replacement-summary-2-1"></div>
+                        <pre id="preview-2-1"></pre>
+                        <button type="button" class="btn-download" onclick="downloadFile('2-1')">
+                            💾 파일 다운로드
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 2-2: 화자명 전체 변경 섹션 -->
+            <section class="pipeline-section" id="section-2-2">
+                <div class="section-header">
+                    <h2>2-2. 화자명 전체 변경 (파일 전체에서 이름 치환)</h2>
+                    <span class="section-status" id="status-2-2">대기 중</span>
+                </div>
+                
+                <div class="section-content">
+                    <div class="form-section">
+                        <label for="srt_file_2_2" class="form-label">
+                            <span class="label-text">📄 SRT 파일 업로드</span>
+                        </label>
+                        <div class="file-upload-wrapper">
+                            <input 
+                                type="file" 
+                                id="srt_file_2_2" 
+                                accept=".srt" 
+                                class="file-input"
+                            >
+                            <label for="srt_file_2_2" class="file-upload-label">
+                                <span class="file-icon">📁</span>
+                                <span id="srt-file-name-2-2">SRT 파일을 선택하세요</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <label class="form-label">
+                            <span class="label-text">화자명 교체 규칙</span>
+                        </label>
+                        <div id="replacement-rules-2-2">
+                            <div class="replacement-row">
+                                <input type="text" class="form-input-small" placeholder="원래 화자명" data-type="old">
+                                <span class="arrow">→</span>
+                                <input type="text" class="form-input-small" placeholder="새 화자명" data-type="new">
+                                <button type="button" class="btn-remove" onclick="removeRule(this)">×</button>
+                            </div>
+                        </div>
+                        <button type="button" id="btn-add-rule-2-2" class="btn-link">+ 규칙 추가</button>
+                    </div>
+
+                    <button type="button" id="btn-replace-speaker" class="btn-primary">
+                        👤 화자명 변경 실행
+                    </button>
+
+                    <div class="result-preview" id="result-2-2" style="display: none;">
+                        <h3>변경 결과:</h3>
+                        <div class="save-info">
+                            <span class="save-icon">📁</span>
+                            <span>저장 위치: <strong id="saved-path-2-2"></strong></span>
+                        </div>
+                        <div id="replacement-summary-2-2"></div>
+                        <pre id="preview-2-2"></pre>
+                        <button type="button" class="btn-download" onclick="downloadFile('2-2')">
+                            💾 파일 다운로드
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 진행 상태 표시 -->
+            <div id="progressSection" class="progress-section" style="display: none;">
+                <div class="progress-info">
+                    <div class="spinner"></div>
+                    <p id="progressText">처리 중입니다...</p>
+                </div>
+            </div>
+
+            <!-- 에러 메시지 -->
+            <div id="errorSection" class="error-section" style="display: none;">
+                <div class="error-content">
+                    <span class="error-icon">⚠️</span>
+                    <p id="errorText"></p>
+                </div>
+            </div>
+        </main>
+
+        <!-- 푸터 -->
+        <footer class="footer">
+            <p>Made with ❤️ by SRT Pipeline</p>
+        </footer>
+    </div>
+
+    <script>
+        // 전역 변수: 각 단계의 결과 데이터
+        let stepData = {
+            '1-1': { content: '', filename: '' },
+            '1-2': { content: '', filename: '' },
+            '2-1': { content: '', filename: '' },
+            '2-2': { content: '', filename: '' }
+        };
+
+        // 파일 선택 이벤트 - 1-1 TXT
+        document.getElementById('txt_file').addEventListener('change', function(e) {
+            const fileNameDisplay = document.getElementById('txt-file-name');
+            if (this.files && this.files.length > 0) {
+                fileNameDisplay.textContent = this.files[0].name;
+            } else {
+                fileNameDisplay.textContent = 'TXT 파일을 선택하세요';
+            }
+        });
+
+        // 파일 선택 이벤트 - 1-2 SRT
+        document.getElementById('srt_file_1_2').addEventListener('change', function(e) {
+            const fileNameDisplay = document.getElementById('srt-file-name-1-2');
+            if (this.files && this.files.length > 0) {
+                fileNameDisplay.textContent = this.files[0].name;
+            } else {
+                fileNameDisplay.textContent = 'SRT 파일을 선택하세요';
+            }
+        });
+
+        // 파일 선택 이벤트 - 2-1 SRT
+        document.getElementById('srt_file_2_1').addEventListener('change', function(e) {
+            const fileNameDisplay = document.getElementById('srt-file-name-2-1');
+            if (this.files && this.files.length > 0) {
+                fileNameDisplay.textContent = this.files[0].name;
+            } else {
+                fileNameDisplay.textContent = 'SRT 파일을 선택하세요';
+            }
+        });
+
+        // 파일 선택 이벤트 - 2-2 SRT
+        document.getElementById('srt_file_2_2').addEventListener('change', function(e) {
+            const fileNameDisplay = document.getElementById('srt-file-name-2-2');
+            if (this.files && this.files.length > 0) {
+                fileNameDisplay.textContent = this.files[0].name;
+            } else {
+                fileNameDisplay.textContent = 'SRT 파일을 선택하세요';
+            }
+        });
+
+        // 1-1: TXT → SRT 변환 실행
+        document.getElementById('btn-convert').addEventListener('click', async function() {
+            const fileInput = document.getElementById('txt_file');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showError('TXT 파일을 선택해주세요.');
+                return;
+            }
+
+            showProgress('TXT를 SRT로 변환 중...');
+            updateStatus('1-1', 'processing');
+
+            const formData = new FormData();
+            formData.append('txt_file', file);
+
+            try {
+                const response = await fetch('/convert_txt_to_srt', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '변환 중 오류가 발생했습니다.');
+                }
+
+                // 결과 저장
+                stepData['1-1'] = {
+                    content: result.content,
+                    filename: result.filename
+                };
+
+                // 결과 미리보기 표시
+                document.getElementById('preview-1-1').textContent = result.content.substring(0, 500) + '...';
+                document.getElementById('saved-path-1-1').textContent = result.saved_to;
+                document.getElementById('result-1-1').style.display = 'block';
+
+                updateStatus('1-1', 'completed');
+                hideProgress();
+
+                alert(`✅ 변환 완료!\n저장 위치: ${result.saved_to}`);
+
+            } catch (error) {
+                showError(error.message);
+                updateStatus('1-1', 'error');
+            }
+        });
+
+        // 1-2: SRT 파일 복제 실행
+        document.getElementById('btn-duplicate').addEventListener('click', async function() {
+            const fileInput = document.getElementById('srt_file_1_2');
+            const file = fileInput.files[0];
+            const count = parseInt(document.getElementById('duplicate_count').value);
+
+            if (!file) {
+                showError('SRT 파일을 선택해주세요.');
+                return;
+            }
+
+            showProgress(`파일을 ${count}개 복제 중...`);
+            updateStatus('1-2', 'processing');
+
+            try {
+                // 파일 읽기
+                const content = await file.text();
+
+                const response = await fetch('/duplicate_srt', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: content,
+                        filename: file.name,
+                        count: count
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '복제 중 오류가 발생했습니다.');
+                }
+
+                // 복제된 파일 목록 표시
+                const filesList = document.getElementById('duplicated-files-list');
+                filesList.innerHTML = '';
+                
+                result.files.forEach((file, index) => {
+                    const fileDiv = document.createElement('div');
+                    fileDiv.className = 'file-item';
+                    fileDiv.innerHTML = `
+                        <span>📄 ${file.filename}</span>
+                    `;
+                    filesList.appendChild(fileDiv);
+                });
+
+                document.getElementById('saved-path-1-2').textContent = result.saved_to;
+                document.getElementById('result-1-2').style.display = 'block';
+
+                updateStatus('1-2', 'completed');
+                hideProgress();
+
+                alert(`✅ 복제 완료!\n저장 위치: ${result.saved_to}`);
+
+            } catch (error) {
+                showError(error.message);
+                updateStatus('1-2', 'error');
+            }
+        });
+
+        // 2-1: 단어 수정 실행
+        document.getElementById('btn-replace').addEventListener('click', async function() {
+            const fileInput = document.getElementById('srt_file_2_1');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showError('SRT 파일을 선택해주세요.');
+                return;
+            }
+
+            // 교체 규칙 수집
+            const replacements = [];
+            const rows = document.querySelectorAll('#replacement-rules-2-1 .replacement-row');
+            
+            rows.forEach(row => {
+                const oldWord = row.querySelector('[data-type="old"]').value.trim();
+                const newWord = row.querySelector('[data-type="new"]').value.trim();
+                
+                if (oldWord) {
+                    replacements.push({ old: oldWord, new: newWord });
+                }
+            });
+
+            if (replacements.length === 0) {
+                showError('최소 하나의 교체 규칙을 입력해주세요.');
+                return;
+            }
+
+            showProgress('단어를 수정 중...');
+            updateStatus('2-1', 'processing');
+
+            try {
+                // 파일 읽기
+                const content = await file.text();
+
+                const response = await fetch('/replace_words', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: content,
+                        filename: file.name,
+                        replacements: replacements
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '수정 중 오류가 발생했습니다.');
+                }
+
+                // 결과 저장
+                stepData['2-1'] = {
+                    content: result.content,
+                    filename: result.filename
+                };
+
+                // 교체 요약 표시
+                const summary = document.getElementById('replacement-summary-2-1');
+                summary.innerHTML = '<h4>교체된 단어:</h4>';
+                
+                for (const [word, count] of Object.entries(result.replacement_count)) {
+                    summary.innerHTML += `<p>• "${word}" → ${count}번 교체됨</p>`;
+                }
+
+                // 결과 미리보기 표시
+                document.getElementById('preview-2-1').textContent = result.content.substring(0, 500) + '...';
+                document.getElementById('saved-path-2-1').textContent = result.saved_to;
+                document.getElementById('result-2-1').style.display = 'block';
+
+                updateStatus('2-1', 'completed');
+                hideProgress();
+
+                alert(`✅ 수정 완료!\n저장 위치: ${result.saved_to}`);
+
+            } catch (error) {
+                showError(error.message);
+                updateStatus('2-1', 'error');
+            }
+        });
+
+        // 2-2: 화자명 전체 변경 실행
+        document.getElementById('btn-replace-speaker').addEventListener('click', async function() {
+            const fileInput = document.getElementById('srt_file_2_2');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                showError('SRT 파일을 선택해주세요.');
+                return;
+            }
+
+            // 교체 규칙 수집
+            const replacements = [];
+            const rows = document.querySelectorAll('#replacement-rules-2-2 .replacement-row');
+            
+            rows.forEach(row => {
+                const oldName = row.querySelector('[data-type="old"]').value.trim();
+                const newName = row.querySelector('[data-type="new"]').value.trim();
+                
+                if (oldName) {
+                    replacements.push({ old: oldName, new: newName });
+                }
+            });
+
+            if (replacements.length === 0) {
+                showError('최소 하나의 화자명 교체 규칙을 입력해주세요.');
+                return;
+            }
+
+            showProgress('화자명을 변경 중...');
+            updateStatus('2-2', 'processing');
+
+            try {
+                // 파일 읽기
+                const content = await file.text();
+
+                const response = await fetch('/replace_speaker_names', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        content: content,
+                        filename: file.name,
+                        replacements: replacements
+                    })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || '변경 중 오류가 발생했습니다.');
+                }
+
+                // 결과 저장
+                stepData['2-2'] = {
+                    content: result.content,
+                    filename: result.filename
+                };
+
+                // 교체 요약 표시
+                const summary = document.getElementById('replacement-summary-2-2');
+                summary.innerHTML = '<h4>변경된 화자명:</h4>';
+                
+                for (const [name, count] of Object.entries(result.replacement_count)) {
+                    summary.innerHTML += `<p>• "${name}" → ${count}번 변경됨</p>`;
+                }
+
+                // 결과 미리보기 표시
+                document.getElementById('preview-2-2').textContent = result.content.substring(0, 500) + '...';
+                document.getElementById('saved-path-2-2').textContent = result.saved_to;
+                document.getElementById('result-2-2').style.display = 'block';
+
+                updateStatus('2-2', 'completed');
+                hideProgress();
+
+                alert(`✅ 화자명 변경 완료!\n저장 위치: ${result.saved_to}`);
+
+            } catch (error) {
+                showError(error.message);
+                updateStatus('2-2', 'error');
+            }
+        });
+
+        // 규칙 추가 버튼 - 2-1
+        document.getElementById('btn-add-rule-2-1').addEventListener('click', function() {
+            const rulesContainer = document.getElementById('replacement-rules-2-1');
+            const newRow = document.createElement('div');
+            newRow.className = 'replacement-row';
+            newRow.innerHTML = `
+                <input type="text" class="form-input-small" placeholder="찾을 단어" data-type="old">
+                <span class="arrow">→</span>
+                <input type="text" class="form-input-small" placeholder="바꿀 단어" data-type="new">
+                <button type="button" class="btn-remove" onclick="removeRule(this)">×</button>
+            `;
+            rulesContainer.appendChild(newRow);
+        });
+
+        // 규칙 추가 버튼 - 2-2
+        document.getElementById('btn-add-rule-2-2').addEventListener('click', function() {
+            const rulesContainer = document.getElementById('replacement-rules-2-2');
+            const newRow = document.createElement('div');
+            newRow.className = 'replacement-row';
+            newRow.innerHTML = `
+                <input type="text" class="form-input-small" placeholder="원래 화자명" data-type="old">
+                <span class="arrow">→</span>
+                <input type="text" class="form-input-small" placeholder="새 화자명" data-type="new">
+                <button type="button" class="btn-remove" onclick="removeRule(this)">×</button>
+            `;
+            rulesContainer.appendChild(newRow);
+        });
+
+        // 규칙 제거
+        function removeRule(button) {
+            const row = button.parentElement;
+            const container = row.parentElement;
+            
+            // 최소 1개는 유지
+            if (container.children.length > 1) {
+                row.remove();
+            }
+        }
+
+        // 상태 업데이트
+        function updateStatus(step, status) {
+            const statusElement = document.getElementById(`status-${step}`);
+            
+            if (status === 'processing') {
+                statusElement.textContent = '처리 중...';
+                statusElement.className = 'section-status processing';
+            } else if (status === 'completed') {
+                statusElement.textContent = '완료 ✓';
+                statusElement.className = 'section-status completed';
+            } else if (status === 'error') {
+                statusElement.textContent = '오류 ✗';
+                statusElement.className = 'section-status error';
+            }
+        }
+
+        // 파일 다운로드
+        function downloadFile(step) {
+            const data = stepData[step];
+            
+            if (!data.content) {
+                alert('다운로드할 파일이 없습니다.');
+                return;
+            }
+            
+            const blob = new Blob([data.content], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = data.filename;
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        // 진행 상태 표시
+        function showProgress(message) {
+            document.getElementById('progressText').textContent = message;
+            document.getElementById('progressSection').style.display = 'block';
+            document.getElementById('errorSection').style.display = 'none';
+        }
+
+        // 진행 상태 숨김
+        function hideProgress() {
+            document.getElementById('progressSection').style.display = 'none';
+        }
+
+        // 에러 표시
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorSection').style.display = 'block';
+            document.getElementById('progressSection').style.display = 'none';
+            
+            // 5초 후 자동 숨김
+            setTimeout(() => {
+                document.getElementById('errorSection').style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

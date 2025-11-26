@@ -1,0 +1,4239 @@
+﻿<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SRT 자막 다국어 번역기</title>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9375549032833516"
+     crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <style>
+        /* 전역 스타일 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        /* 헤더 */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        /* 탭 네비게이션 */
+        .tab-navigation {
+            display: flex;
+            border-bottom: 2px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 20px 30px;
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .tab-button:hover {
+            background: rgba(102, 126, 234, 0.1);
+            color: #667eea;
+        }
+
+        .tab-button.active {
+            color: #667eea;
+            background: white;
+        }
+
+        .tab-button.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: #667eea;
+        }
+
+        /* 메인 컨텐츠 */
+        .main-content {
+            padding: 40px 30px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* 단어 수정 스타일 */
+        .word-replacement-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .word-replacement-item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .word-input-group {
+            flex: 1;
+            display: flex;
+            gap: 10px;
+        }
+
+        .word-input-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .word-input-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .word-input {
+            padding: 10px 14px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            transition: all 0.3s ease;
+        }
+
+        .word-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-remove {
+            padding: 10px 16px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            align-self: flex-end;
+        }
+
+        .btn-remove:hover {
+            background: #c0392b;
+            transform: scale(1.05);
+        }
+
+        .btn-add {
+            padding: 12px 24px;
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-add:hover {
+            background: #229954;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
+        }
+
+        /* 화자 매핑 스타일 */
+        .speaker-mapping-item {
+            background: #f8f9fa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 15px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .speaker-mapping-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .speaker-kr-input {
+            flex: 1;
+            padding: 8px 12px;
+            border: 2px solid #667eea;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .speaker-lang-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .speaker-lang-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .speaker-lang-label {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #888;
+        }
+
+        .speaker-lang-input {
+            padding: 6px 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        .speaker-lang-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        /* 폼 섹션 */
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+
+        .label-text {
+            font-size: 1.1rem;
+        }
+
+        .required {
+            color: #e74c3c;
+            margin-left: 4px;
+        }
+
+        /* API 키 입력 그룹 */
+        .api-key-group {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .api-key-input-wrapper {
+            flex: 1;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-input:disabled {
+            background: #f5f5f5;
+            cursor: not-allowed;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            padding: 10px 20px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .btn-secondary:hover {
+            background: #5568d3;
+        }
+
+        .btn-secondary.edit {
+            background: #28a745;
+        }
+
+        .btn-secondary.edit:hover {
+            background: #218838;
+        }
+
+        .form-help {
+            display: block;
+            margin-top: 8px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .form-help a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .form-help a:hover {
+            text-decoration: underline;
+        }
+
+        .saved-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #28a745;
+            color: white;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            margin-top: 8px;
+        }
+
+        /* 파일 업로드 */
+        .file-upload-wrapper {
+            position: relative;
+        }
+
+        .file-input {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        .file-upload-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 30px;
+            border: 3px dashed #d0d0d0;
+            border-radius: 10px;
+            background: #f8f9fa;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .file-upload-label:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .file-upload-wrapper.drag-over .file-upload-label {
+            border-color: #667eea;
+            background: #e8eeff;
+            transform: scale(1.02);
+        }
+
+        .file-icon {
+            font-size: 2rem;
+        }
+
+        #file-name {
+            font-weight: 500;
+            color: #555;
+        }
+
+        /* 언어 선택 그리드 */
+        .language-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .language-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .language-checkbox:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .language-checkbox input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .language-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .language-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+        }
+
+        .btn-link {
+            background: none;
+            border: none;
+            color: #667eea;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
+            padding: 5px 10px;
+            text-decoration: underline;
+        }
+
+        .btn-link:hover {
+            color: #5568d3;
+        }
+
+        /* 제출 버튼 */
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 재시도 버튼 */
+        .btn-retry {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+            margin-top: 15px;
+        }
+
+        .btn-retry:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(243, 156, 18, 0.6);
+        }
+
+        .btn-retry:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 제어 버튼 그룹 */
+        .control-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .btn-control {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-pause {
+            background: #ffc107;
+            color: #333;
+        }
+
+        .btn-pause:hover {
+            background: #ffb300;
+        }
+
+        .btn-resume {
+            background: #28a745;
+            color: white;
+        }
+
+        .btn-resume:hover {
+            background: #218838;
+        }
+
+        .btn-cancel {
+            background: #dc3545;
+            color: white;
+        }
+
+        .btn-cancel:hover {
+            background: #c82333;
+        }
+
+        /* 진행 상태 */
+        .progress-section {
+            margin-top: 30px;
+            padding: 25px;
+            background: #f0f4ff;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .progress-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #e0e0e0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .spinner.paused {
+            animation-play-state: paused;
+            border-top-color: #ffc107;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .timer-container {
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+
+        .timer-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            align-items: flex-end;
+        }
+
+        .timer-label {
+            font-size: 0.7rem;
+            color: #999;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 2px;
+        }
+
+        .timer {
+            background: #667eea;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        .timer-remaining {
+            background: #f39c12;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        .timer-total {
+            background: #27ae60;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            white-space: nowrap;
+        }
+
+        .timer-total-remaining {
+            background: #e67e22;
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        #progressText {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .progress-details {
+            margin-top: 10px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .progress-bar-container {
+            width: 100%;
+            height: 30px;
+            background: #e0e0e0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 15px;
+            position: relative;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .error-warning {
+            margin-top: 10px;
+            padding: 15px;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            color: #856404;
+        }
+
+        .retry-info {
+            margin-top: 10px;
+            padding: 15px;
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            color: #2e7d32;
+        }
+
+        .pause-notice {
+            margin-top: 10px;
+            padding: 15px;
+            background: #fff8e1;
+            border: 1px solid #ffc107;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            color: #f57c00;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        /* 에러 메시지 */
+        .error-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #fff5f5;
+            border: 2px solid #e74c3c;
+            border-radius: 10px;
+        }
+
+        .error-content {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .error-icon {
+            font-size: 1.5rem;
+        }
+
+        #errorText {
+            color: #c0392b;
+            font-weight: 600;
+        }
+
+        /* API 키 섹션 (푸터 위) */
+        .api-key-section {
+            padding: 15px 30px;
+            background: #f8f9fa;
+            border-top: 1px solid #e0e0e0;
+        }
+
+        .api-key-section .form-section {
+            margin-bottom: 0;
+        }
+
+        .api-key-section .form-label {
+            font-size: 0.85rem;
+            margin-bottom: 5px;
+        }
+
+        .api-key-section .form-input {
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+
+        .api-key-section .btn-secondary {
+            padding: 8px 16px;
+            font-size: 0.85rem;
+        }
+
+        .api-key-section .form-help {
+            font-size: 0.8rem;
+        }
+
+        .api-key-section .saved-badge {
+            font-size: 0.75rem;
+            padding: 3px 10px;
+        }
+
+        /* 푸터 */
+        .footer {
+            padding: 15px;
+            text-align: center;
+            background: #e8e8e8;
+            color: #666;
+            font-size: 0.85rem;
+        }
+
+        /* 반응형 */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .main-content {
+                padding: 30px 20px;
+            }
+            
+            .language-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .api-key-group {
+                flex-direction: column;
+            }
+
+            .btn-group {
+                flex-direction: row;
+            }
+
+            .progress-header {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 -->
+        <header class="header">
+            <h1>🌏 SRT 자막 변환 도구</h1>
+            <p class="subtitle">GPT API 번역 & 프리미어 자막 변환</p>
+        </header>
+
+        <!-- 탭 네비게이션 -->
+        <nav class="tab-navigation">
+            <button class="tab-button active" data-tab="file-generate">
+                1. 파일 생성
+            </button>
+            <button class="tab-button" data-tab="replace">
+                2. 단어 수정
+            </button>
+            <button class="tab-button" data-tab="translation">
+                3. 각 나라별 번역
+            </button>
+            <button class="tab-button" data-tab="premiere">
+                4. 프리미어 자막 변환
+            </button>
+        </nav>
+
+        <!-- 메인 컨텐츠 -->
+        <main class="main-content">
+            <!-- 탭 1: 파일 생성 -->
+            <div id="tab-file-generate" class="tab-content active">
+                <!-- TXT → SRT 변환 -->
+                <div class="form-section">
+                    <label class="form-label">
+                        <span class="label-text">📝 1-1. TXT → SRT 변환</span>
+                    </label>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label for="txt_files" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">
+                            📄 TXT 파일 업로드 (여러 개 선택 가능) <span class="required">*</span>
+                        </label>
+                        <div class="file-upload-wrapper" id="txtFilesWrapper">
+                            <input 
+                                type="file" 
+                                id="txt_files" 
+                                accept=".txt" 
+                                multiple
+                                class="file-input"
+                            >
+                            <label for="txt_files" class="file-upload-label">
+                                <span class="file-icon">📁</span>
+                                <span id="txt-file-names">TXT 파일 선택 (여러 개 가능)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="button" id="convertTxtBtn" class="btn-primary">
+                        🔄 TXT → SRT 변환
+                    </button>
+                </div>
+
+                <!-- 구분선 -->
+                <hr style="margin: 40px 0; border: none; border-top: 2px solid #e0e0e0;">
+
+                <!-- SRT 복제 -->
+                <div class="form-section">
+                    <label class="form-label">
+                        <span class="label-text">📋 1-2. SRT 파일 복제 (다국어 파일 생성)</span>
+                    </label>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label for="clone_srt_file" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">
+                            📄 한국어 SRT 파일 업로드 <span class="required">*</span>
+                        </label>
+                        <div class="file-upload-wrapper" id="cloneSrtWrapper">
+                            <input 
+                                type="file" 
+                                id="clone_srt_file" 
+                                accept=".srt" 
+                                class="file-input"
+                            >
+                            <label for="clone_srt_file" class="file-upload-label">
+                                <span class="file-icon">📁</span>
+                                <span id="clone-srt-file-name">한국어.srt 파일 선택</span>
+                            </label>
+                        </div>
+                        <small style="display: block; margin-top: 8px; color: #666; font-size: 0.9rem;">
+                            💡 영어, 일본어, 중국어, 번체, 인도네시아어, 스페인어, 태국어 총 7개 파일로 복제됩니다
+                        </small>
+                    </div>
+
+                    <button type="button" id="cloneSrtBtn" class="btn-primary">
+                        📋 SRT 복제하기
+                    </button>
+                </div>
+
+                <!-- 진행 상태 -->
+                <div id="fileGenerateProgressSection" class="progress-section" style="display: none;">
+                    <div class="progress-header">
+                        <div class="progress-info">
+                            <div class="spinner" id="fileGenerateSpinner"></div>
+                            <div style="flex: 1;">
+                                <p id="fileGenerateProgressText">처리 준비 중...</p>
+                                <p class="progress-details" id="fileGenerateProgressDetails"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 에러 메시지 -->
+                <div id="fileGenerateErrorSection" class="error-section" style="display: none;">
+                    <div class="error-content">
+                        <span class="error-icon">⚠️</span>
+                        <p id="fileGenerateErrorText"></p>
+                    </div>
+                </div>
+
+                <!-- 구분선 -->
+                <hr style="margin: 40px 0; border: none; border-top: 2px solid #e0e0e0;">
+
+                <!-- API 키 설정 -->
+                <div class="form-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <label class="form-label" style="margin-bottom: 0;">
+                            <span class="label-text">🔑 OpenAI API 키 설정</span>
+                        </label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <span id="savedBadge" class="saved-badge" style="display: none;">✓ 저장됨</span>
+                            <button type="button" id="editKeyBtn" class="btn-secondary edit" style="display: none;">수정</button>
+                        </div>
+                    </div>
+                    
+                    <div id="apiKeyInputSection" style="display: none;">
+                        <div class="api-key-group">
+                            <div class="api-key-input-wrapper">
+                                <input 
+                                    type="password" 
+                                    id="api_key" 
+                                    name="api_key" 
+                                    class="form-input" 
+                                    placeholder="sk-..." 
+                                    required
+                                >
+                                <small class="form-help">
+                                    API 키는 <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI 플랫폼</a>에서 발급받을 수 있습니다
+                                </small>
+                            </div>
+                            <div class="btn-group">
+                                <button type="button" id="saveKeyBtn" class="btn-secondary">저장</button>
+                                <button type="button" id="cancelKeyBtn" class="btn-secondary" style="display: none;">취소</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 탭 3: 각 나라별 번역 -->
+            <div id="tab-translation" class="tab-content">
+                <!-- 3-1. 화자명 변경된 번역 -->
+                <div class="form-section">
+                    <label class="form-label">
+                        <span class="label-text">👥 3-1. 화자명 변경된 번역</span>
+                    </label>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label for="speaker_srt_files" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">
+                            📄 SRT 파일 업로드 (여러 개 선택 가능) <span class="required">*</span>
+                        </label>
+                        <div class="file-upload-wrapper" id="speakerSrtFilesWrapper">
+                            <input 
+                                type="file" 
+                                id="speaker_srt_files" 
+                                accept=".srt" 
+                                multiple
+                                class="file-input"
+                            >
+                            <label for="speaker_srt_files" class="file-upload-label">
+                                <span class="file-icon">📁</span>
+                                <span id="speaker-srt-file-names">SRT 파일 선택 (여러 개 가능)</span>
+                            </label>
+                        </div>
+                        <small style="display: block; margin-top: 8px; color: #666; font-size: 0.9rem;">
+                            💡 업로드한 각 파일의 한국어만 번역되며, 영어 등 다른 언어는 그대로 유지됩니다
+                        </small>
+                    </div>
+
+                    <button type="button" id="speakerTranslateBtn" class="btn-primary">
+                        🚀 번역 시작
+                    </button>
+                </div>
+
+                <!-- 화자명 번역 진행 상태 -->
+                <div id="speakerProgressSection" class="progress-section" style="display: none;">
+                    <div class="progress-header">
+                        <div class="progress-info">
+                            <div class="spinner" id="speakerSpinner"></div>
+                            <div style="flex: 1;">
+                                <p id="speakerProgressText">번역 준비 중...</p>
+                                <p class="progress-details" id="speakerProgressDetails"></p>
+                            </div>
+                        </div>
+                        <div class="timer-container">
+                            <div class="timer-group">
+                                <div class="timer-label">현재 파일</div>
+                                <div class="timer" id="speakerTimer">⏱️ 00:00:00</div>
+                                <div class="timer-remaining" id="speakerTimerRemaining" style="display: none;">⏳ 00:00:00</div>
+                            </div>
+                            <div class="timer-group">
+                                <div class="timer-label">전체</div>
+                                <div class="timer-total" id="speakerTimerTotal">🕐 00:00:00</div>
+                                <div class="timer-total-remaining" id="speakerTimerTotalRemaining" style="display: none;">⏳ 00:00:00</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" id="speakerProgressBar" style="width: 0%">0%</div>
+                    </div>
+                    <div id="speakerPauseNotice" class="pause-notice" style="display: none;">
+                        ⏸️ 번역이 일시정지되었습니다. "재개" 버튼을 클릭하여 계속하세요.
+                    </div>
+                </div>
+
+                <!-- 화자명 번역 제어 버튼 -->
+                <div id="speakerControlButtons" class="form-section" style="display: none;">
+                    <div class="btn-group">
+                        <button type="button" id="speakerPauseBtn" class="btn-secondary">⏸️ 일시정지</button>
+                        <button type="button" id="speakerResumeBtn" class="btn-secondary" style="display: none;">▶️ 재개</button>
+                        <button type="button" id="speakerCancelBtn" class="btn-secondary">❌ 취소</button>
+                    </div>
+                </div>
+
+                <!-- 화자명 번역 에러 -->
+                <div id="speakerErrorSection" class="error-section" style="display: none;">
+                    <div class="error-content">
+                        <span class="error-icon">⚠️</span>
+                        <p id="speakerErrorText"></p>
+                    </div>
+                </div>
+
+                <!-- 구분선 -->
+                <hr style="margin: 40px 0; border: none; border-top: 2px solid #e0e0e0;">
+
+                <!-- 3-2. 전체 번역 -->
+                <form id="translationForm">
+                <div class="form-section">
+                    <label class="form-label">
+                        <span class="label-text">🌏 3-2. 전체 번역</span>
+                    </label>
+                </div>
+
+                <!-- 파일 업로드 -->
+                <div class="form-section">
+                    <label for="srt_file" class="form-label">
+                        <span class="label-text">📄 SRT 파일 업로드 (여러 개 선택 가능)</span>
+                        <span class="required">*</span>
+                    </label>
+                    <div class="file-upload-wrapper" id="fullTranslateWrapper">
+                        <input 
+                            type="file" 
+                            id="srt_file" 
+                            name="srt_file" 
+                            accept=".srt" 
+                            class="file-input" 
+                            multiple
+                            required
+                        >
+                        <label for="srt_file" class="file-upload-label">
+                            <span class="file-icon">📁</span>
+                            <span id="file-name">파일을 선택하거나 드래그하세요 (여러 개 가능)</span>
+                        </label>
+                    </div>
+                    <small style="display: block; margin-top: 8px; color: #666; font-size: 0.9rem;">
+                        💡 각 파일의 한국어만 번역되며, 영어 등 다른 언어는 그대로 유지됩니다
+                    </small>
+                </div>
+
+                <!-- 언어 선택 -->
+                <div class="form-section">
+                    <label class="form-label">
+                        <span class="label-text">🌍 번역할 언어 선택</span>
+                        <span class="required">*</span>
+                    </label>
+                    <div class="language-grid">
+                        <label class="language-checkbox">
+                            <input type="checkbox" name="languages" value="en" id="lang_en">
+                            <span class="language-name">English (영어)</span>
+                        </label>
+                        <label class="language-checkbox">
+                            <input type="checkbox" name="languages" value="ja" id="lang_ja">
+                            <span class="language-name">Japanese (일본어)</span>
+                        </label>
+                        <label class="language-checkbox">
+                            <input type="checkbox" name="languages" value="th" id="lang_th">
+                            <span class="language-name">Thai (태국어)</span>
+                        </label>
+                        <label class="language-checkbox">
+                            <input type="checkbox" name="languages" value="zh" id="lang_zh">
+                            <span class="language-name">Chinese (중국어)</span>
+                        </label>
+                        <label class="language-checkbox">
+                            <input type="checkbox" name="languages" value="id" id="lang_id">
+                            <span class="language-name">Indonesian (인도네시아어)</span>
+                        </label>
+                        <label class="language-checkbox">
+                            <input type="checkbox" name="languages" value="es" id="lang_es">
+                            <span class="language-name">Spanish (스페인어)</span>
+                        </label>
+                    </div>
+                    <div class="language-actions">
+                        <button type="button" id="selectAll" class="btn-link">전체 선택</button>
+                        <button type="button" id="deselectAll" class="btn-link">전체 해제</button>
+                    </div>
+                </div>
+
+                <!-- 제출 버튼 -->
+                <div class="form-section">
+                    <button type="submit" id="submitBtn" class="btn-primary">
+                        🚀 번역 시작
+                    </button>
+                    <!-- 재시도 버튼 -->
+                    <button type="button" id="retryBtn" class="btn-retry" style="display: none;">
+                        🔄 실패한 블록 재시도
+                    </button>
+                    <!-- 제어 버튼 -->
+                    <div id="controlButtons" class="control-buttons" style="display: none;">
+                        <button type="button" id="pauseBtn" class="btn-control btn-pause">
+                            ⏸️ 일시정지
+                        </button>
+                        <button type="button" id="resumeBtn" class="btn-control btn-resume" style="display: none;">
+                            ▶️ 재개
+                        </button>
+                        <button type="button" id="cancelBtn" class="btn-control btn-cancel">
+                            ❌ 취소
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 진행 상태 -->
+                <div id="progressSection" class="progress-section" style="display: none;">
+                    <div class="progress-header">
+                        <div class="progress-info">
+                            <div class="spinner" id="spinner"></div>
+                            <div style="flex: 1;">
+                                <p id="progressText">번역 준비 중...</p>
+                                <p class="progress-details" id="progressDetails"></p>
+                                <p class="progress-details" id="overallProgress" style="margin-top: 5px; color: #999;"></p>
+                            </div>
+                        </div>
+                        <div class="timer-container">
+                            <!-- 현재 언어 타이머 -->
+                            <div class="timer-group">
+                                <div class="timer-label">현재 언어</div>
+                                <div class="timer" id="timer">⏱️ 00:00:00</div>
+                                <div class="timer-remaining" id="timerRemaining" style="display: none;">⏳ 계산 중...</div>
+                            </div>
+                            <!-- 전체 타이머 -->
+                            <div class="timer-group">
+                                <div class="timer-label">전체</div>
+                                <div class="timer-total" id="timerTotal">🕐 00:00:00</div>
+                                <div class="timer-total-remaining" id="timerTotalRemaining" style="display: none;">⌛ 계산 중...</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 진행률 바 -->
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" id="progressBar" style="width: 0%;">
+                            <span id="progressPercent">0%</span>
+                        </div>
+                    </div>
+
+                    <div id="pauseNotice" class="pause-notice" style="display: none;">
+                        ⏸️ 일시정지 중... 재개 버튼을 눌러주세요
+                    </div>
+                    <div id="errorWarning" class="error-warning" style="display: none;"></div>
+                    <div id="retryInfo" class="retry-info" style="display: none;"></div>
+                </div>
+
+                <!-- 에러 메시지 -->
+                <div id="errorSection" class="error-section" style="display: none;">
+                    <div class="error-content">
+                        <span class="error-icon">⚠️</span>
+                        <p id="errorText"></p>
+                    </div>
+                </div>
+
+                <!-- 구분선 -->
+                <hr style="margin: 40px 0; border: none; border-top: 2px solid #e0e0e0;">
+
+                <!-- 3-3. 검토(블록번호, 한글) -->
+                <div class="form-section">
+                    <label class="form-label">
+                        <span class="label-text">🔍 3-3. 검토 (블록번호, 한글)</span>
+                    </label>
+                    <small style="display: block; margin-top: 8px; color: #666; font-size: 0.9rem;">
+                        💡 SRT 파일의 마지막 블록번호와 한글이 남아있는 블록을 확인합니다
+                    </small>
+                </div>
+
+                <!-- 파일 업로드 -->
+                <div class="form-section">
+                    <label for="review_files" class="form-label">
+                        <span class="label-text">📄 SRT 파일 업로드 (여러 개 선택 가능)</span>
+                        <span class="required">*</span>
+                    </label>
+                    <div class="file-upload-wrapper" id="reviewFilesWrapper">
+                        <input 
+                            type="file" 
+                            id="review_files" 
+                            accept=".srt" 
+                            multiple
+                            class="file-input"
+                        >
+                        <label for="review_files" class="file-upload-label">
+                            <span class="file-icon">📁</span>
+                            <span id="review-file-names">파일을 선택하거나 드래그하세요 (여러 개 가능)</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="button" id="reviewBtn" class="btn-primary">
+                    🔍 검토 시작
+                </button>
+
+                <!-- 검토 결과 -->
+                <div id="reviewResultSection" style="display: none; margin-top: 30px;">
+                    <div class="form-section">
+                        <label class="form-label">
+                            <span class="label-text">📋 검토 결과</span>
+                        </label>
+                        <div id="reviewResultContent" style="
+                            background: #f8f9fa;
+                            border: 1px solid #e0e0e0;
+                            border-radius: 8px;
+                            padding: 20px;
+                            max-height: 500px;
+                            overflow-y: auto;
+                            font-family: 'Consolas', 'Monaco', monospace;
+                            font-size: 0.9rem;
+                            line-height: 1.6;
+                            white-space: pre-wrap;
+                        "></div>
+                        <button type="button" id="downloadReviewLogBtn" class="btn-secondary" style="margin-top: 15px;">
+                            💾 로그 다운로드
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 검토 에러 -->
+                <div id="reviewErrorSection" class="error-section" style="display: none;">
+                    <div class="error-content">
+                        <span class="error-icon">⚠️</span>
+                        <p id="reviewErrorText"></p>
+                    </div>
+                </div>
+            </form>
+            </div>
+
+            <!-- 탭 2: 단어 수정 -->
+            <div id="tab-replace" class="tab-content">
+                <form id="replaceForm">
+                    <!-- 2-1. 단어 수정 -->
+                    <div class="form-section">
+                        <label class="form-label">
+                            <span class="label-text">✏️ 2-1. 단어 수정</span>
+                        </label>
+                    </div>
+
+                    <!-- 파일 업로드 -->
+                    <div class="form-section">
+                        <label for="replace_file" class="form-label">
+                            <span class="label-text">📄 SRT 파일 업로드 (여러 개 선택 가능)</span>
+                            <span class="required">*</span>
+                        </label>
+                        <div class="file-upload-wrapper" id="replaceFileWrapper">
+                            <input 
+                                type="file" 
+                                id="replace_file" 
+                                name="replace_file" 
+                                accept=".srt" 
+                                multiple
+                                class="file-input" 
+                                required
+                            >
+                            <label for="replace_file" class="file-upload-label">
+                                <span class="file-icon">📁</span>
+                                <span id="replace-file-name">파일을 선택하거나 드래그하세요 (여러 개 가능)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 단어 수정 목록 -->
+                    <div class="form-section">
+                        <label class="form-label">
+                            <span class="label-text">✏️ 단어 수정 목록</span>
+                        </label>
+                        <div id="wordReplacementList" class="word-replacement-list">
+                            <!-- 초기 단어 수정 항목 -->
+                            <div class="word-replacement-item">
+                                <div class="word-input-group">
+                                    <div class="word-input-wrapper">
+                                        <label class="word-input-label">기존 단어</label>
+                                        <input type="text" class="word-input from-word" placeholder="예: 수지">
+                                    </div>
+                                    <div class="word-input-wrapper">
+                                        <label class="word-input-label">변경할 단어</label>
+                                        <input type="text" class="word-input to-word" placeholder="예: suji">
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-remove" onclick="removeWordPair(this)">🗑️</button>
+                            </div>
+                        </div>
+                        <button type="button" class="btn-add" onclick="addWordPair()">
+                            ➕ 단어 추가
+                        </button>
+                    </div>
+
+                    <!-- 변환 버튼 -->
+                    <div class="form-section">
+                        <button type="submit" id="replaceBtn" class="btn-primary">
+                            🔄 단어 수정 시작
+                        </button>
+                    </div>
+
+                    <!-- 구분선 -->
+                    <hr style="margin: 40px 0; border: none; border-top: 2px solid #e0e0e0;">
+
+                    <!-- 화자명 변경 섹션 -->
+                    <div class="form-section">
+                        <label class="form-label">
+                            <span class="label-text">🎭 2-2. 화자명 전체 변경 (파일 전체에서 이름 치환)</span>
+                        </label>
+                        
+                        <!-- 언어별 SRT 파일 업로드 -->
+                        <div style="margin-bottom: 20px;">
+                            <label for="speaker_lang_files" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">
+                                🌍 수정할 언어별 SRT 파일 (여러 개 선택 가능) <span class="required">*</span>
+                            </label>
+                            <div class="file-upload-wrapper" id="speakerLangFilesWrapper">
+                                <input 
+                                    type="file" 
+                                    id="speaker_lang_files" 
+                                    accept=".srt" 
+                                    multiple
+                                    class="file-input"
+                                >
+                                <label for="speaker_lang_files" class="file-upload-label">
+                                    <span class="file-icon">📁</span>
+                                    <span id="speaker-lang-file-names">언어별 SRT 파일 선택 (영어, 태국어, 중국어, 번체, 일본어, 스페인어, 인도네시아어)</span>
+                                </label>
+                            </div>
+                            <small style="display: block; margin-top: 8px; color: #666; font-size: 0.9rem;">
+                                💡 파일 전체에서 한국어 이름을 각 언어 이름으로 치환합니다 (화자명 + 대사 내용 모두 포함)
+                            </small>
+                        </div>
+
+                        <!-- 화자 매핑 관리 버튼 -->
+                        <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                            <button type="button" class="btn-add" onclick="addSpeakerMapping()" style="flex: 1;">
+                                ➕ 화자 추가
+                            </button>
+                            <button type="button" class="btn-secondary" onclick="clearAllSpeakers()" style="flex: 1;">
+                                🗑️ 전체 삭제
+                            </button>
+                            <button type="button" class="btn-secondary" onclick="downloadSpeakerMapping()" style="flex: 1;">
+                                💾 다운로드
+                            </button>
+                            <label for="speaker_upload_file" class="btn-secondary" style="flex: 1; margin: 0; cursor: pointer; text-align: center;">
+                                📂 업로드
+                                <input type="file" id="speaker_upload_file" accept=".json,.txt" style="display: none;" onchange="uploadSpeakerMapping(this)">
+                            </label>
+                        </div>
+
+                        <!-- 화자 매핑 리스트 -->
+                        <div id="speakerMappingList" class="word-replacement-list" style="max-height: 400px; overflow-y: auto;">
+                            <!-- 초기 화자 매핑 항목 -->
+                        </div>
+
+                        <!-- 화자명 변경 버튼 -->
+                        <button type="button" id="speakerChangeBtn" class="btn-primary" onclick="processSpeakerChange()">
+                            🎭 화자명 변경 시작
+                        </button>
+                    </div>
+
+                    <!-- 화자명 변경 진행 상태 -->
+                    <div id="speakerProgressSection" class="progress-section" style="display: none;">
+                        <div class="progress-header">
+                            <div class="progress-info">
+                                <div class="spinner" id="speakerSpinner"></div>
+                                <div style="flex: 1;">
+                                    <p id="speakerProgressText">처리 준비 중...</p>
+                                    <p class="progress-details" id="speakerProgressDetails"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 화자명 변경 에러 메시지 -->
+                    <div id="speakerErrorSection" class="error-section" style="display: none;">
+                        <div class="error-content">
+                            <span class="error-icon">⚠️</span>
+                            <p id="speakerErrorText"></p>
+                        </div>
+                    </div>
+
+                    <!-- 진행 상태 -->
+                    <div id="replaceProgressSection" class="progress-section" style="display: none;">
+                        <div class="progress-header">
+                            <div class="progress-info">
+                                <div class="spinner" id="replaceSpinner"></div>
+                                <div style="flex: 1;">
+                                    <p id="replaceProgressText">수정 준비 중...</p>
+                                    <p class="progress-details" id="replaceProgressDetails"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 에러 메시지 -->
+                    <div id="replaceErrorSection" class="error-section" style="display: none;">
+                        <div class="error-content">
+                            <span class="error-icon">⚠️</span>
+                            <p id="replaceErrorText"></p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 탭 4: 프리미어 자막 변환 -->
+            <div id="tab-premiere" class="tab-content">
+                <form id="premiereForm">
+                    <!-- 파일 업로드 (다중) -->
+                    <div class="form-section">
+                        <label for="premiere_files" class="form-label">
+                            <span class="label-text">📄 SRT 파일 업로드 (여러 파일 가능)</span>
+                            <span class="required">*</span>
+                        </label>
+                        <div class="file-upload-wrapper">
+                            <input 
+                                type="file" 
+                                id="premiere_files" 
+                                name="premiere_files" 
+                                accept=".srt" 
+                                multiple
+                                class="file-input" 
+                                required
+                            >
+                            <label for="premiere_files" class="file-upload-label">
+                                <span class="file-icon">📁</span>
+                                <span id="premiere-file-names">파일을 선택하거나 드래그하세요 (여러 파일 선택 가능)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 변환 버튼 -->
+                    <div class="form-section">
+                        <button type="submit" id="convertBtn" class="btn-primary">
+                            🔄 변환 시작
+                        </button>
+                    </div>
+
+                    <!-- 진행 상태 -->
+                    <div id="premiereProgressSection" class="progress-section" style="display: none;">
+                        <div class="progress-header">
+                            <div class="progress-info">
+                                <div class="spinner" id="premiereSpinner"></div>
+                                <div style="flex: 1;">
+                                    <p id="premiereProgressText">변환 준비 중...</p>
+                                    <p class="progress-details" id="premiereProgressDetails"></p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 진행률 바 -->
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="premiereProgressBar" style="width: 0%;">
+                                <span id="premiereProgressPercent">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 에러 메시지 -->
+                    <div id="premiereErrorSection" class="error-section" style="display: none;">
+                        <div class="error-content">
+                            <span class="error-icon">⚠️</span>
+                            <p id="premiereErrorText"></p>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </main>
+
+        <!-- 푸터 -->
+        <footer class="footer">
+            <p>Made with ❤️ by SRT Translator</p>
+        </footer>
+    </div>
+
+    <script>
+        // ========================================
+        // 탭 전환 기능
+        // ========================================
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.getAttribute('data-tab');
+                
+                // 모든 탭 버튼과 컨텐츠 비활성화
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+                
+                // 선택된 탭 활성화
+                button.classList.add('active');
+                document.getElementById(`tab-${tabName}`).classList.add('active');
+            });
+        });
+
+        // ========================================
+        // 파일 생성 기능 (탭 1)
+        // ========================================
+        
+        // TXT 파일 선택 이벤트
+        const txtFilesInput = document.getElementById('txt_files');
+        const txtFileNames = document.getElementById('txt-file-names');
+        
+        txtFilesInput.addEventListener('change', function() {
+            const count = this.files.length;
+            if (count > 0) {
+                const names = Array.from(this.files).map(f => f.name).join(', ');
+                txtFileNames.textContent = 
+                    `${count}개 파일 선택됨: ${names.substring(0, 60)}${names.length > 60 ? '...' : ''}`;
+            } else {
+                txtFileNames.textContent = 'TXT 파일 선택 (여러 개 가능)';
+            }
+        });
+
+        // SRT 복제 파일 선택 이벤트
+        const cloneSrtInput = document.getElementById('clone_srt_file');
+        const cloneSrtFileName = document.getElementById('clone-srt-file-name');
+        
+        cloneSrtInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                cloneSrtFileName.textContent = this.files[0].name;
+            } else {
+                cloneSrtFileName.textContent = '한국어.srt 파일 선택';
+            }
+        });
+
+        // TXT 파일 드래그 앤 드롭
+        const txtFilesWrapper = document.getElementById('txtFilesWrapper');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            txtFilesWrapper.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            txtFilesWrapper.addEventListener(eventName, () => {
+                txtFilesWrapper.classList.add('drag-over');
+            });
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            txtFilesWrapper.addEventListener(eventName, () => {
+                txtFilesWrapper.classList.remove('drag-over');
+            });
+        });
+        
+        txtFilesWrapper.addEventListener('drop', function(e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                txtFilesInput.files = files;
+                const count = files.length;
+                const names = Array.from(files).map(f => f.name).join(', ');
+                txtFileNames.textContent = 
+                    `${count}개 파일 선택됨: ${names.substring(0, 60)}${names.length > 60 ? '...' : ''}`;
+            }
+        });
+
+        // SRT 복제 파일 드래그 앤 드롭
+        const cloneSrtWrapper = document.getElementById('cloneSrtWrapper');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            cloneSrtWrapper.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            cloneSrtWrapper.addEventListener(eventName, () => {
+                cloneSrtWrapper.classList.add('drag-over');
+            });
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            cloneSrtWrapper.addEventListener(eventName, () => {
+                cloneSrtWrapper.classList.remove('drag-over');
+            });
+        });
+        
+        cloneSrtWrapper.addEventListener('drop', function(e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                cloneSrtInput.files = files;
+                cloneSrtFileName.textContent = files[0].name;
+            }
+        });
+
+        // TXT → SRT 변환 (단순 확장자 변경)
+        document.getElementById('convertTxtBtn').addEventListener('click', async function() {
+            const files = txtFilesInput.files;
+            
+            if (files.length === 0) {
+                alert('TXT 파일을 선택해주세요.');
+                return;
+            }
+            
+            const btn = this;
+            const progressSection = document.getElementById('fileGenerateProgressSection');
+            const errorSection = document.getElementById('fileGenerateErrorSection');
+            const spinner = document.getElementById('fileGenerateSpinner');
+            
+            btn.disabled = true;
+            progressSection.style.display = 'block';
+            errorSection.style.display = 'none';
+            spinner.classList.add('active');
+            
+            try {
+                // 파일이 1개인 경우
+                if (files.length === 1) {
+                    const file = files[0];
+                    document.getElementById('fileGenerateProgressText').textContent = 
+                        `변환 중: ${file.name}`;
+                    
+                    const txtContent = await file.text();
+                    const srtFileName = file.name.replace(/\.txt$/i, '.srt');
+                    
+                    // 단일 파일 다운로드
+                    const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = srtFileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    progressSection.style.display = 'none';
+                    spinner.classList.remove('active');
+                    alert(`✅ TXT → SRT 변환 완료!\n\n파일: ${srtFileName}`);
+                    
+                } else {
+                    // 파일이 2개 이상인 경우 ZIP으로
+                    const zip = new JSZip();
+                    
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        
+                        document.getElementById('fileGenerateProgressText').textContent = 
+                            `변환 중: ${file.name}`;
+                        document.getElementById('fileGenerateProgressDetails').textContent = 
+                            `${i + 1} / ${files.length} 파일`;
+                        
+                        try {
+                            const txtContent = await file.text();
+                            const srtFileName = file.name.replace(/\.txt$/i, '.srt');
+                            zip.file(srtFileName, txtContent);
+                            
+                        } catch (error) {
+                            console.error(`파일 변환 실패: ${file.name}`, error);
+                            throw new Error(`${file.name} 변환 실패: ${error.message}`);
+                        }
+                    }
+                    
+                    // ZIP 다운로드
+                    document.getElementById('fileGenerateProgressText').textContent = 'ZIP 파일 생성 중...';
+                    const zipBlob = await zip.generateAsync({ 
+                        type: 'blob',
+                        compression: 'DEFLATE',
+                        compressionOptions: { level: 9 }
+                    });
+                    
+                    const url = URL.createObjectURL(zipBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'txt_to_srt_converted.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    progressSection.style.display = 'none';
+                    spinner.classList.remove('active');
+                    alert(`✅ TXT → SRT 변환 완료!\n\n${files.length}개 파일이 변환되어 다운로드되었습니다.`);
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                progressSection.style.display = 'none';
+                spinner.classList.remove('active');
+                errorSection.style.display = 'block';
+                document.getElementById('fileGenerateErrorText').textContent = error.message;
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        // SRT 복제
+        document.getElementById('cloneSrtBtn').addEventListener('click', async function() {
+            const file = cloneSrtInput.files[0];
+            
+            if (!file) {
+                alert('한국어 SRT 파일을 선택해주세요.');
+                return;
+            }
+            
+            const btn = this;
+            const progressSection = document.getElementById('fileGenerateProgressSection');
+            const errorSection = document.getElementById('fileGenerateErrorSection');
+            const spinner = document.getElementById('fileGenerateSpinner');
+            
+            btn.disabled = true;
+            progressSection.style.display = 'block';
+            errorSection.style.display = 'none';
+            spinner.classList.add('active');
+            
+            try {
+                document.getElementById('fileGenerateProgressText').textContent = 'SRT 파일 읽는 중...';
+                const srtContent = await file.text();
+                
+                // 복제할 언어 목록
+                const languages = ['영어', '일본어', '중국어', '번체', '인도네시아어', '스페인어', '태국어'];
+                
+                const zip = new JSZip();
+                
+                for (let i = 0; i < languages.length; i++) {
+                    const lang = languages[i];
+                    
+                    document.getElementById('fileGenerateProgressText').textContent = 
+                        `복제 중: ${lang}.srt`;
+                    document.getElementById('fileGenerateProgressDetails').textContent = 
+                        `${i + 1} / ${languages.length} 파일`;
+                    
+                    zip.file(`${lang}.srt`, srtContent);
+                }
+                
+                // ZIP 다운로드
+                document.getElementById('fileGenerateProgressText').textContent = 'ZIP 파일 생성 중...';
+                const zipBlob = await zip.generateAsync({ 
+                    type: 'blob',
+                    compression: 'DEFLATE',
+                    compressionOptions: { level: 9 }
+                });
+                
+                const url = URL.createObjectURL(zipBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '2-1. 단어 수정.zip';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                progressSection.style.display = 'none';
+                spinner.classList.remove('active');
+                alert(`✅ SRT 복제 완료!\n\n${languages.length}개 언어 파일이 생성되어 다운로드되었습니다.`);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                progressSection.style.display = 'none';
+                spinner.classList.remove('active');
+                errorSection.style.display = 'block';
+                document.getElementById('fileGenerateErrorText').textContent = error.message;
+            } finally {
+                btn.disabled = false;
+            }
+        });
+
+        // ========================================
+        // 각 나라별 번역 (기존 기능)
+        // ========================================
+        
+        // 언어 매핑
+        const LANGUAGES = {
+            'en': 'English',
+            'ja': 'Japanese',
+            'th': 'Thai',
+            'zh': 'Chinese (Simplified)',
+            'id': 'Indonesian',
+            'es': 'Spanish'
+        };
+
+        // API 키 관리
+        const API_KEY_STORAGE = 'srt_translator_api_key';
+
+        // 전역 변수 - 번역 상태 저장
+        let originalBlocks = [];
+        let translationResults = {};
+        let failedBlocks = {};
+        let currentFilename = '';
+        let selectedLanguages = [];
+        
+        // 제어 변수
+        let isPaused = false;
+        let isCancelled = false;
+        let startTime = null;
+        let pauseStartTime = null;
+        let totalPausedTime = 0;
+        let timerInterval = null;
+        let totalBlocks = 0;
+        let completedBlocks = 0;
+        let currentLangTotalBlocks = 0;
+        let currentLangCompletedBlocks = 0;
+        
+        // 전체 시간 관련 변수
+        let totalStartTime = null;
+        let totalPausedTime2 = 0;
+        let totalPauseStartTime = null;
+
+        // 페이지 로드 시 저장된 API 키 불러오기
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedKey = localStorage.getItem(API_KEY_STORAGE);
+            const apiKeyInputSection = document.getElementById('apiKeyInputSection');
+            const editKeyBtn = document.getElementById('editKeyBtn');
+            const savedBadge = document.getElementById('savedBadge');
+            
+            if (savedKey) {
+                // 저장된 키가 있으면: 입력란 숨기고, "저장됨" 뱃지와 "수정" 버튼만 표시
+                document.getElementById('api_key').value = savedKey;
+                apiKeyInputSection.style.display = 'none';
+                editKeyBtn.style.display = 'block';
+                savedBadge.style.display = 'inline-block';
+            } else {
+                // 저장된 키가 없으면: 입력란 표시
+                apiKeyInputSection.style.display = 'block';
+                editKeyBtn.style.display = 'none';
+                savedBadge.style.display = 'none';
+            }
+        });
+
+        // 시간 포맷 함수
+        function formatTime(ms) {
+            const hours = Math.floor(ms / 3600000);
+            const minutes = Math.floor((ms % 3600000) / 60000);
+            const seconds = Math.floor((ms % 60000) / 1000);
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        // 타이머 시작 (전체 작업 시작 시 한 번만 호출)
+        function startTotalTimer() {
+            totalStartTime = Date.now();
+            totalPausedTime2 = 0;
+        }
+
+        // 타이머 시작 (각 언어별로 호출)
+        function startTimer() {
+            startTime = Date.now();
+            totalPausedTime = 0;
+            timerInterval = setInterval(() => {
+                if (!isPaused) {
+                    // 현재 언어 타이머
+                    const elapsed = Date.now() - startTime - totalPausedTime;
+                    document.getElementById('timer').textContent = `⏱️ ${formatTime(elapsed)}`;
+                    
+                    // 전체 타이머
+                    const totalElapsed = Date.now() - totalStartTime - totalPausedTime2;
+                    document.getElementById('timerTotal').textContent = `🕐 ${formatTime(totalElapsed)}`;
+                    
+                    // 남은 시간 계산
+                    updateRemainingTime(elapsed, totalElapsed);
+                }
+            }, 1000);
+        }
+
+        // 남은 시간 업데이트
+        function updateRemainingTime(elapsed, totalElapsed) {
+            // 현재 언어 남은 시간
+            if (currentLangCompletedBlocks > 10 && currentLangTotalBlocks > 0) {
+                const avgTimePerBlock = elapsed / currentLangCompletedBlocks;
+                const remainingBlocks = currentLangTotalBlocks - currentLangCompletedBlocks;
+                const estimatedRemaining = avgTimePerBlock * remainingBlocks;
+                
+                document.getElementById('timerRemaining').style.display = 'block';
+                document.getElementById('timerRemaining').textContent = `⏳ ${formatTime(estimatedRemaining)}`;
+            }
+            
+            // 전체 남은 시간 (전체 진행률 기반)
+            const totalProgress = completedBlocks / totalBlocks;
+            if (totalProgress > 0.05 && totalBlocks > 0) {
+                const avgTimePerTotalBlock = totalElapsed / completedBlocks;
+                const remainingTotalBlocks = totalBlocks - completedBlocks;
+                const estimatedTotalRemaining = avgTimePerTotalBlock * remainingTotalBlocks;
+                
+                document.getElementById('timerTotalRemaining').style.display = 'block';
+                document.getElementById('timerTotalRemaining').textContent = `⌛ ${formatTime(estimatedTotalRemaining)}`;
+            }
+        }
+
+        // 타이머 정지
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+                timerInterval = null;
+            }
+        }
+
+        // 진행률 업데이트
+        function updateProgress(currentLangBlock, totalLangBlocks, langName = '', langIndex = 0, totalLangs = 1) {
+            const percent = Math.round((currentLangBlock / totalLangBlocks) * 100);
+            
+            // 현재 언어 진행 상태 업데이트
+            currentLangTotalBlocks = totalLangBlocks;
+            currentLangCompletedBlocks = currentLangBlock;
+            
+            // 전체 진행 상태 업데이트 (이전 언어들은 완료 + 현재 언어 진행)
+            completedBlocks = (langIndex * totalLangBlocks) + currentLangBlock;
+            totalBlocks = totalLangs * totalLangBlocks;
+            
+            console.log(`진행률 업데이트: ${langName} ${currentLangBlock}/${totalLangBlocks} (${percent}%) - 언어 ${langIndex + 1}/${totalLangs}`);
+            
+            document.getElementById('progressBar').style.width = `${percent}%`;
+            document.getElementById('progressPercent').textContent = `${percent}%`;
+            
+            if (langName) {
+                document.getElementById('progressText').textContent = 
+                    `${langName}: ${currentLangBlock} / ${totalLangBlocks} 블록 (${percent}%)`;
+                document.getElementById('progressDetails').textContent = 
+                    `${langName} 번역 진행 중...`;
+                document.getElementById('overallProgress').textContent = 
+                    `전체 진행: ${langIndex + 1} / ${totalLangs} 언어`;
+            }
+        }
+
+        // 일시정지 버튼
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            isPaused = true;
+            pauseStartTime = Date.now();
+            totalPauseStartTime = Date.now();
+            document.getElementById('pauseBtn').style.display = 'none';
+            document.getElementById('resumeBtn').style.display = 'block';
+            document.getElementById('pauseNotice').style.display = 'block';
+            document.getElementById('spinner').classList.add('paused');
+        });
+
+        // 재개 버튼
+        document.getElementById('resumeBtn').addEventListener('click', () => {
+            isPaused = false;
+            if (pauseStartTime) {
+                const pauseDuration = Date.now() - pauseStartTime;
+                totalPausedTime += pauseDuration;
+                totalPausedTime2 += pauseDuration;
+                pauseStartTime = null;
+                totalPauseStartTime = null;
+            }
+            document.getElementById('pauseBtn').style.display = 'block';
+            document.getElementById('resumeBtn').style.display = 'none';
+            document.getElementById('pauseNotice').style.display = 'none';
+            document.getElementById('spinner').classList.remove('paused');
+        });
+
+        // 취소 버튼
+        document.getElementById('cancelBtn').addEventListener('click', () => {
+            if (confirm('번역을 취소하시겠습니까?\n진행 중인 작업이 중단됩니다.')) {
+                isCancelled = true;
+                stopTimer();
+                document.getElementById('progressSection').style.display = 'none';
+                document.getElementById('controlButtons').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+                alert('번역이 취소되었습니다.');
+            }
+        });
+
+        // API 키 저장 버튼
+        document.getElementById('saveKeyBtn').addEventListener('click', () => {
+            const apiKey = document.getElementById('api_key').value.trim();
+            if (!apiKey) {
+                alert('API 키를 입력해주세요.');
+                return;
+            }
+            
+            if (!apiKey.startsWith('sk-')) {
+                alert('올바른 OpenAI API 키 형식이 아닙니다. (sk-로 시작해야 함)');
+                return;
+            }
+
+            localStorage.setItem(API_KEY_STORAGE, apiKey);
+            
+            // 입력란 숨기고, "저장됨" 뱃지와 "수정" 버튼만 표시
+            document.getElementById('apiKeyInputSection').style.display = 'none';
+            document.getElementById('editKeyBtn').style.display = 'block';
+            document.getElementById('savedBadge').style.display = 'inline-block';
+            document.getElementById('cancelKeyBtn').style.display = 'none';
+            
+            alert('API 키가 저장되었습니다.');
+        });
+
+        // API 키 수정 버튼
+        document.getElementById('editKeyBtn').addEventListener('click', () => {
+            const apiKeyInputSection = document.getElementById('apiKeyInputSection');
+            const apiKeyInput = document.getElementById('api_key');
+            
+            // 입력란 보이기
+            apiKeyInputSection.style.display = 'block';
+            apiKeyInput.disabled = false;
+            apiKeyInput.focus();
+            
+            // 버튼 상태 변경
+            document.getElementById('editKeyBtn').style.display = 'none';
+            document.getElementById('savedBadge').style.display = 'none';
+            document.getElementById('cancelKeyBtn').style.display = 'inline-block';
+        });
+
+        // API 키 취소 버튼 (새로 추가)
+        document.getElementById('cancelKeyBtn').addEventListener('click', () => {
+            // 저장된 키 다시 불러오기
+            const savedKey = localStorage.getItem(API_KEY_STORAGE);
+            if (savedKey) {
+                document.getElementById('api_key').value = savedKey;
+            }
+            
+            // 입력란 다시 숨기기
+            document.getElementById('apiKeyInputSection').style.display = 'none';
+            document.getElementById('editKeyBtn').style.display = 'block';
+            document.getElementById('savedBadge').style.display = 'inline-block';
+            document.getElementById('cancelKeyBtn').style.display = 'none';
+        });
+
+        // SRT 파싱 함수 (개선된 버전)
+        function parseSRT(content) {
+            const blocks = [];
+            
+            // 줄바꿈 통일 (\r\n -> \n)
+            content = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            
+            // 여러 개의 빈 줄을 2개로 통일
+            content = content.replace(/\n{3,}/g, '\n\n');
+            
+            // 빈 줄로 분리
+            const rawBlocks = content.trim().split('\n\n');
+            
+            console.log(`원본 블록 분리: ${rawBlocks.length}개 발견`);
+            
+            for (let i = 0; i < rawBlocks.length; i++) {
+                const rawBlock = rawBlocks[i].trim();
+                if (!rawBlock) continue;
+                
+                const lines = rawBlock.split('\n');
+                
+                // 최소 3줄이어야 함 (번호, 타임코드, 텍스트)
+                if (lines.length < 3) {
+                    console.log(`블록 ${i} 스킵: 줄 수 부족 (${lines.length}줄)`);
+                    continue;
+                }
+                
+                // 첫 번째 줄이 숫자인지 확인
+                const index = parseInt(lines[0].trim());
+                if (isNaN(index)) {
+                    console.log(`블록 ${i} 스킵: 블록 번호가 숫자가 아님 (${lines[0]})`);
+                    continue;
+                }
+                
+                // 두 번째 줄이 타임코드 형식인지 확인
+                const timecode = lines[1].trim();
+                if (!timecode.includes('-->')) {
+                    console.log(`블록 ${i} 스킵: 타임코드 형식 오류 (${timecode})`);
+                    continue;
+                }
+                
+                // 나머지 줄은 텍스트
+                const text = lines.slice(2).join('\n').trim();
+                if (!text) {
+                    console.log(`블록 ${i} 스킵: 텍스트 없음`);
+                    continue;
+                }
+                
+                blocks.push({ index, timecode, text });
+            }
+            
+            console.log(`파싱 완료: ${blocks.length}개 블록 성공`);
+            return blocks;
+        }
+
+        // SRT 생성 함수
+        function generateSRT(blocks) {
+            if (!Array.isArray(blocks)) {
+                console.error('generateSRT: blocks is not an array', blocks);
+                return '';
+            }
+            
+            return blocks.map(block => {
+                // 'timecode' 또는 'time' 속성 둘 다 지원
+                const timeString = block.timecode || block.time || '00:00:00,000 --> 00:00:00,000';
+                return `${block.index}\n${timeString}\n${block.text}\n`;
+            }).join('\n');
+        }
+
+        // 딜레이 함수
+        async function delay(ms) {
+            // 일시정지 중일 때는 대기
+            while (isPaused && !isCancelled) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            // 취소되지 않았으면 정상 딜레이
+            if (!isCancelled) {
+                await new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+
+        // GPT API 번역 함수
+        async function translateText(apiKey, text, targetLanguage, maxRetries = 3) {
+            if (isCancelled) throw new Error('번역이 취소되었습니다.');
+            
+            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                if (isCancelled) throw new Error('번역이 취소되었습니다.');
+                
+                try {
+                    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${apiKey}`
+                        },
+                        body: JSON.stringify({
+                            model: 'gpt-4o-mini',
+                            messages: [
+                                {
+                                    role: 'system',
+                                    content: `You are a professional translator specialized in Korean to ${targetLanguage} translation.
+
+CRITICAL RULES:
+1. ONLY translate Korean text (한글) to ${targetLanguage}
+2. If you see English, numbers, special characters, or any non-Korean text, KEEP THEM EXACTLY AS THEY ARE
+3. DO NOT translate English words or phrases under any circumstances
+4. DO NOT add any explanation, notes, or commentary
+5. Maintain the exact tone, style, and formatting of the original text
+6. If the entire text is non-Korean, return it unchanged
+
+Example:
+Input: "안녕하세요 Hello 123"
+Output (to English): "Hello Hello 123"  (only 안녕하세요 is translated)
+
+Now translate the following text:`
+                                },
+                                {
+                                    role: 'user',
+                                    content: text
+                                }
+                            ],
+                            temperature: 0.3
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        
+                        if (response.status === 429 && attempt < maxRetries) {
+                            const waitTime = attempt * 2000;
+                            console.log(`Rate limit hit. Waiting ${waitTime}ms...`);
+                            await delay(waitTime);
+                            continue;
+                        }
+                        
+                        throw new Error(error.error?.message || `API 오류 (${response.status})`);
+                    }
+
+                    const data = await response.json();
+                    return data.choices[0].message.content.trim();
+                    
+                } catch (error) {
+                    if (isCancelled) throw error;
+                    console.error(`Translation attempt ${attempt} failed:`, error);
+                    
+                    if (attempt < maxRetries) {
+                        await delay(1000 * attempt);
+                        continue;
+                    }
+                    
+                    throw error;
+                }
+            }
+        }
+
+        // 전체 블록 번역 함수
+        async function translateBlocks(apiKey, blocks, langCode, onProgress, isRetry = false) {
+            const targetLanguage = LANGUAGES[langCode];
+            const translatedBlocks = [];
+            const errors = [];
+            
+            console.log(`${LANGUAGES[langCode]} 번역 시작 - 총 ${blocks.length}개 블록`);
+            
+            for (let i = 0; i < blocks.length; i++) {
+                if (isCancelled) throw new Error('번역이 취소되었습니다.');
+                
+                const block = blocks[i];
+                // onProgress 콜백 호출: (langCode, 현재블록, 전체블록, 에러수)
+                if (onProgress) {
+                    onProgress(langCode, i + 1, blocks.length, errors.length);
+                }
+                
+                try {
+                    const translatedText = await translateText(apiKey, block.text, targetLanguage);
+                    translatedBlocks.push({
+                        index: block.index,
+                        timecode: block.timecode,
+                        text: translatedText,
+                        originalIndex: i
+                    });
+                    
+                    await delay(100);
+                    
+                } catch (error) {
+                    if (isCancelled) throw error;
+                    console.error(`Block ${block.index} translation failed:`, error);
+                    errors.push({
+                        blockIndex: block.index,
+                        originalIndex: i,
+                        error: error.message
+                    });
+                    
+                    translatedBlocks.push({
+                        index: block.index,
+                        timecode: block.timecode,
+                        text: `[번역 실패 - 원본] ${block.text}`,
+                        originalIndex: i,
+                        failed: true
+                    });
+                    
+                    await delay(500);
+                }
+            }
+            
+            return { translatedBlocks, errors };
+        }
+
+        // 개별 SRT 파일 다운로드
+        function downloadSRTFile(langCode, blocks) {
+            const srtContent = generateSRT(blocks);
+            const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${currentFilename}_${langCode}.srt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log(`다운로드 완료: ${currentFilename}_${langCode}.srt`);
+        }
+
+        // ZIP 파일 생성 및 다운로드 (재시도용)
+        async function downloadZipFile() {
+            const zip = new JSZip();
+            
+            for (const langCode in translationResults) {
+                const blocks = translationResults[langCode];
+                const srtContent = generateSRT(blocks);
+                zip.file(`${currentFilename}_${langCode}.srt`, srtContent);
+            }
+            
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            const downloadFilename = `${currentFilename}_translated_${timestamp}.zip`;
+            
+            const url = URL.createObjectURL(zipBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = downloadFilename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // 실패 정보 표시
+        function showFailureInfo() {
+            const totalFailed = Object.values(failedBlocks).reduce((sum, arr) => sum + arr.length, 0);
+            
+            if (totalFailed > 0) {
+                const errorWarning = document.getElementById('errorWarning');
+                const failureDetails = Object.entries(failedBlocks)
+                    .filter(([_, indices]) => indices.length > 0)
+                    .map(([langCode, indices]) => `${LANGUAGES[langCode]}: ${indices.length}개`)
+                    .join('\n');
+                
+                errorWarning.innerHTML = `⚠️ <strong>${totalFailed}개 블록 번역 실패</strong><br>${failureDetails.replace(/\n/g, '<br>')}`;
+                errorWarning.style.display = 'block';
+                
+                document.getElementById('retryBtn').style.display = 'block';
+                
+                return true;
+            }
+            return false;
+        }
+
+        // 재시도 버튼 이벤트
+        document.getElementById('retryBtn').addEventListener('click', async function() {
+            const apiKey = document.getElementById('api_key').value.trim();
+            const submitBtn = document.getElementById('submitBtn');
+            const retryBtn = document.getElementById('retryBtn');
+            const progressSection = document.getElementById('progressSection');
+            const errorSection = document.getElementById('errorSection');
+            const controlButtons = document.getElementById('controlButtons');
+            const errorWarning = document.getElementById('errorWarning');
+            const retryInfo = document.getElementById('retryInfo');
+            
+            // 제어 변수 초기화
+            isPaused = false;
+            isCancelled = false;
+            
+            submitBtn.disabled = true;
+            retryBtn.disabled = true;
+            progressSection.style.display = 'block';
+            controlButtons.style.display = 'flex';
+            errorSection.style.display = 'none';
+            errorWarning.style.display = 'none';
+            document.getElementById('pauseNotice').style.display = 'none';
+            document.getElementById('pauseBtn').style.display = 'block';
+            document.getElementById('resumeBtn').style.display = 'none';
+            
+            // 타이머 시작
+            startTimer();
+            
+            const totalToRetry = Object.values(failedBlocks).reduce((sum, arr) => sum + arr.length, 0);
+            retryInfo.innerHTML = `🔄 <strong>${totalToRetry}개 실패 블록 재시도 중...</strong>`;
+            retryInfo.style.display = 'block';
+            
+            try {
+                const newFailedBlocks = {};
+                const langCodesToRetry = Object.keys(failedBlocks).filter(code => failedBlocks[code].length > 0);
+                
+                for (let i = 0; i < langCodesToRetry.length; i++) {
+                    const langCode = langCodesToRetry[i];
+                    if (isCancelled) break;
+                    
+                    const langName = LANGUAGES[langCode];
+                    const failedIndices = failedBlocks[langCode];
+                    const blocksToRetry = failedIndices.map(idx => originalBlocks[idx]);
+                    
+                    const result = await translateBlocks(
+                        apiKey,
+                        blocksToRetry,
+                        langCode,
+                        (code, current, total, errorCount) => {
+                            updateProgress(current, total, langName, i, langCodesToRetry.length);
+                        },
+                        true
+                    );
+                    
+                    result.translatedBlocks.forEach((block, idx) => {
+                        const originalIdx = failedIndices[idx];
+                        translationResults[langCode][originalIdx] = block;
+                    });
+                    
+                    newFailedBlocks[langCode] = result.errors.map(e => failedIndices[e.originalIndex]);
+                }
+                
+                if (isCancelled) {
+                    return;
+                }
+                
+                stopTimer();
+                failedBlocks = newFailedBlocks;
+                progressSection.style.display = 'none';
+                controlButtons.style.display = 'none';
+                retryInfo.style.display = 'none';
+                
+                const stillFailed = showFailureInfo();
+                await downloadZipFile();
+                
+                if (stillFailed) {
+                    const remainingFailed = Object.values(failedBlocks).reduce((sum, arr) => sum + arr.length, 0);
+                    alert(`⚠️ 재시도 완료!\n\n하지만 여전히 ${remainingFailed}개 블록이 실패했습니다.\n다시 재시도 버튼을 눌러주세요.`);
+                } else {
+                    alert('✅ 모든 블록 번역 성공!\n\nZIP 파일이 다운로드됩니다.');
+                    retryBtn.style.display = 'none';
+                    errorWarning.style.display = 'none';
+                }
+                
+            } catch (error) {
+                if (error.message === '번역이 취소되었습니다.') {
+                    return;
+                }
+                console.error('Retry error:', error);
+                stopTimer();
+                progressSection.style.display = 'none';
+                controlButtons.style.display = 'none';
+                errorSection.style.display = 'block';
+                document.getElementById('errorText').textContent = error.message;
+            } finally {
+                submitBtn.disabled = false;
+                retryBtn.disabled = false;
+            }
+        });
+
+        // ========================================
+        // 1. 화자명 변경된 번역
+        // ========================================
+        
+        // 파일 선택 이벤트
+        const speakerSrtFilesInput = document.getElementById('speaker_srt_files');
+        const speakerSrtFileNames = document.getElementById('speaker-srt-file-names');
+        
+        speakerSrtFilesInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                const names = Array.from(this.files).map(f => f.name).join(', ');
+                speakerSrtFileNames.textContent = 
+                    this.files.length === 1 ? this.files[0].name : `${this.files.length}개 파일 선택됨`;
+            } else {
+                speakerSrtFileNames.textContent = 'SRT 파일 선택 (여러 개 가능)';
+            }
+        });
+
+
+        // 드래그 앤 드롭
+        const speakerSrtFilesWrapper = document.getElementById('speakerSrtFilesWrapper');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            speakerSrtFilesWrapper.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            speakerSrtFilesWrapper.addEventListener(eventName, () => {
+                speakerSrtFilesWrapper.classList.add('drag-over');
+            });
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            speakerSrtFilesWrapper.addEventListener(eventName, () => {
+                speakerSrtFilesWrapper.classList.remove('drag-over');
+            });
+        });
+        
+        speakerSrtFilesWrapper.addEventListener('drop', function(e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                speakerSrtFilesInput.files = files;
+                const names = Array.from(files).map(f => f.name).join(', ');
+                speakerSrtFileNames.textContent = 
+                    files.length === 1 ? files[0].name : `${files.length}개 파일 선택됨`;
+            }
+        });
+
+        // 화자명 번역 전용 변수
+        let speakerIsPaused = false;
+        let speakerIsCancelled = false;
+        let speakerStartTime = null;
+        let speakerPauseStartTime = null;
+        let speakerTotalPausedTime = 0;
+        let speakerTimerInterval = null;
+        let speakerCurrentBlocksTotal = 0;
+        let speakerCurrentBlocksCompleted = 0;
+        let speakerTotalStartTime = null;
+        let speakerTotalPausedTime2 = 0;
+        let speakerTotalPauseStartTime = null;
+
+        // 화자명 번역 타이머 시작
+        function startSpeakerTimer() {
+            speakerStartTime = Date.now();
+            speakerTotalPausedTime = 0;
+            speakerTimerInterval = setInterval(() => {
+                if (!speakerIsPaused) {
+                    const elapsed = Date.now() - speakerStartTime - speakerTotalPausedTime;
+                    document.getElementById('speakerTimer').textContent = `⏱️ ${formatTime(elapsed)}`;
+                    
+                    const totalElapsed = Date.now() - speakerTotalStartTime - speakerTotalPausedTime2;
+                    document.getElementById('speakerTimerTotal').textContent = `🕐 ${formatTime(totalElapsed)}`;
+                    
+                    updateSpeakerRemainingTime(elapsed, totalElapsed);
+                }
+            }, 1000);
+        }
+
+        // 화자명 번역 남은 시간 업데이트
+        function updateSpeakerRemainingTime(elapsed, totalElapsed) {
+            if (speakerCurrentBlocksCompleted > 10 && speakerCurrentBlocksTotal > 0) {
+                const avgTimePerBlock = elapsed / speakerCurrentBlocksCompleted;
+                const remainingBlocks = speakerCurrentBlocksTotal - speakerCurrentBlocksCompleted;
+                const estimatedRemaining = avgTimePerBlock * remainingBlocks;
+                
+                document.getElementById('speakerTimerRemaining').style.display = 'block';
+                document.getElementById('speakerTimerRemaining').textContent = `⏳ ${formatTime(estimatedRemaining)}`;
+            }
+        }
+
+        // 화자명 번역 타이머 중지
+        function stopSpeakerTimer() {
+            if (speakerTimerInterval) {
+                clearInterval(speakerTimerInterval);
+                speakerTimerInterval = null;
+            }
+        }
+
+        // 화자명 번역 진행 상태 업데이트
+        function updateSpeakerProgress(fileName, current, total, fileIndex, totalFiles) {
+            const percentage = Math.round((current / total) * 100);
+            
+            document.getElementById('speakerProgressText').textContent = 
+                `${fileName}: ${current} / ${total} 블록 (${percentage}%)`;
+            
+            document.getElementById('speakerProgressDetails').textContent = 
+                `파일 진행: ${fileIndex} / ${totalFiles}`;
+            
+            document.getElementById('speakerProgressBar').style.width = `${percentage}%`;
+            document.getElementById('speakerProgressBar').textContent = `${percentage}%`;
+        }
+
+        // 화자명 번역 시작 버튼
+        document.getElementById('speakerTranslateBtn').addEventListener('click', async function() {
+            const files = speakerSrtFilesInput.files;
+            
+            if (!files || files.length === 0) {
+                alert('최소 1개 이상의 SRT 파일을 업로드해주세요.');
+                return;
+            }
+
+            const apiKey = document.getElementById('api_key').value.trim();
+            if (!apiKey) {
+                alert('API 키를 입력 또는 저장해주세요.');
+                return;
+            }
+
+            if (!apiKey.startsWith('sk-')) {
+                alert('올바른 OpenAI API 키 형식이 아닙니다. (sk-로 시작해야 함)');
+                return;
+            }
+
+            // 상태 초기화
+            speakerIsPaused = false;
+            speakerIsCancelled = false;
+            speakerTotalStartTime = Date.now();
+            speakerTotalPausedTime2 = 0;
+
+            // UI 초기화
+            const progressSection = document.getElementById('speakerProgressSection');
+            const errorSection = document.getElementById('speakerErrorSection');
+            const controlButtons = document.getElementById('speakerControlButtons');
+            
+            progressSection.style.display = 'block';
+            errorSection.style.display = 'none';
+            controlButtons.style.display = 'flex';
+            this.disabled = true;
+
+            try {
+                // 각 파일에 대해 번역 진행
+                for (let i = 0; i < files.length; i++) {
+                    if (speakerIsCancelled) break;
+
+                    const file = files[i];
+                    const content = await file.text();
+                    const blocks = parseSRT(content);
+                    
+                    if (blocks.length === 0) {
+                        alert(`${file.name}: SRT 파일을 파싱할 수 없습니다.`);
+                        continue;
+                    }
+
+                    // 개별 파일 타이머 시작
+                    startSpeakerTimer();
+                    speakerCurrentBlocksTotal = blocks.length;
+                    speakerCurrentBlocksCompleted = 0;
+
+                    // 파일의 언어 감지 (파일명 기반)
+                    let targetLanguage = 'English'; // 기본값
+                    const fileName = file.name.toLowerCase();
+                    
+                    if (fileName.includes('영어') || fileName.includes('english')) {
+                        targetLanguage = 'English';
+                    } else if (fileName.includes('일본') || fileName.includes('japanese')) {
+                        targetLanguage = 'Japanese';
+                    } else if (fileName.includes('중국') || fileName.includes('chinese')) {
+                        targetLanguage = 'Chinese (Simplified)';
+                    } else if (fileName.includes('번체') || fileName.includes('traditional')) {
+                        targetLanguage = 'Chinese (Traditional)';
+                    } else if (fileName.includes('태국') || fileName.includes('thai')) {
+                        targetLanguage = 'Thai';
+                    } else if (fileName.includes('스페인') || fileName.includes('spanish')) {
+                        targetLanguage = 'Spanish';
+                    } else if (fileName.includes('인도네시아') || fileName.includes('indonesian')) {
+                        targetLanguage = 'Indonesian';
+                    }
+
+                    // 블록별로 번역
+                    const translatedBlocks = [];
+                    let errorCount = 0;
+
+                    for (let j = 0; j < blocks.length; j++) {
+                        // 일시정지 확인
+                        while (speakerIsPaused && !speakerIsCancelled) {
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        }
+
+                        if (speakerIsCancelled) break;
+
+                        const block = blocks[j];
+                        
+                        // 한글 감지 정규식 (자음, 모음, 완성형 한글 모두 포함)
+                        const koreanRegex = /[\u3131-\u314e\u314f-\u3163\uac00-\ud7a3]/;
+                        
+                        // 재시도 로직 (번역이 성공하고 한글이 없을 때까지)
+                        let translatedText = null;
+                        let retryCount = 0;
+                        const maxAutoRetries = 10; // 최대 자동 재시도 횟수
+                        const maxKoreanRetries = 5; // 한글 체크 후 최대 재번역 횟수
+                        
+                        while (translatedText === null && !speakerIsCancelled) {
+                            try {
+                                translatedText = await translateText(apiKey, block.text, targetLanguage);
+                                
+                                // 번역 성공 후 한글이 있는지 체크
+                                if (translatedText && koreanRegex.test(translatedText)) {
+                                    console.warn(`블록 ${block.index}: 번역 결과에 한글 발견: "${translatedText}"`);
+                                    
+                                    // 한글 재번역 시도 (원본 텍스트를 강력한 프롬프트로 재번역)
+                                    let koreanRetryCount = 0;
+                                    let cleanTranslation = null;
+                                    
+                                    while (koreanRetryCount < maxKoreanRetries && !speakerIsCancelled) {
+                                        koreanRetryCount++;
+                                        console.log(`블록 ${block.index}: 한글 완전 제거 재번역 ${koreanRetryCount}/${maxKoreanRetries}`);
+                                        
+                                        try {
+                                            // 강력한 프롬프트로 원본을 다시 번역
+                                            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'Authorization': `Bearer ${apiKey}`
+                                                },
+                                                body: JSON.stringify({
+                                                    model: 'gpt-4o-mini',
+                                                    messages: [
+                                                        {
+                                                            role: 'system',
+                                                            content: `You are a professional translator. CRITICAL RULES:
+
+1. You MUST translate ALL Korean text (한글) to ${targetLanguage}
+2. DO NOT leave any Korean characters in the result
+3. If you see proper nouns (like "His man"), keep them in English but translate ALL surrounding Korean text
+4. Even single Korean words or particles MUST be translated
+5. Your output should contain ZERO Korean characters (ㄱ-ㅎ, ㅏ-ㅣ, 가-힣)
+6. If the text contains English or other non-Korean languages, keep them as they are
+
+Example:
+Input: "진정한 사랑을 찾기 위해 His man 이곳으로 모였는데요"
+Output (to Spanish): "Para encontrar el amor verdadero, nos reunimos aquí en His man"
+
+Now translate the following Korean text to ${targetLanguage}. Remember: NO Korean characters should remain in your translation.`
+                                                        },
+                                                        {
+                                                            role: 'user',
+                                                            content: block.text  // 원본 텍스트를 다시 번역
+                                                        }
+                                                    ],
+                                                    temperature: 0.3
+                                                })
+                                            });
+
+                                            if (response.ok) {
+                                                const data = await response.json();
+                                                cleanTranslation = data.choices[0].message.content.trim();
+                                                
+                                                // 재번역 결과에 한글이 있는지 체크
+                                                if (cleanTranslation && !koreanRegex.test(cleanTranslation)) {
+                                                    console.log(`블록 ${block.index}: 한글 제거 성공! "${cleanTranslation}"`);
+                                                    translatedText = cleanTranslation;
+                                                    break; // 한글이 없으면 성공
+                                                } else if (cleanTranslation) {
+                                                    console.warn(`블록 ${block.index}: 재번역 ${koreanRetryCount}회 후에도 한글 존재: "${cleanTranslation}"`);
+                                                    translatedText = cleanTranslation; // 최신 결과 유지
+                                                }
+                                            } else {
+                                                console.error(`블록 ${block.index}: API 오류 (${response.status})`);
+                                            }
+                                            
+                                            // 잠시 대기
+                                            await new Promise(resolve => setTimeout(resolve, 1000));
+                                        } catch (retryError) {
+                                            console.error(`블록 ${block.index}: 한글 재번역 실패:`, retryError);
+                                            await new Promise(resolve => setTimeout(resolve, 2000));
+                                        }
+                                    }
+                                    
+                                    // 최대 재시도 후에도 한글이 남아있으면 원본을 한 번 더 시도
+                                    if (koreanRegex.test(translatedText)) {
+                                        console.error(`블록 ${block.index}: ${maxKoreanRetries}회 후에도 한글 남음. 최종 시도...`);
+                                        
+                                        try {
+                                            // 마지막 시도: 매우 강력한 프롬프트
+                                            const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Content-Type': 'application/json',
+                                                    'Authorization': `Bearer ${apiKey}`
+                                                },
+                                                body: JSON.stringify({
+                                                    model: 'gpt-4o-mini',
+                                                    messages: [
+                                                        {
+                                                            role: 'system',
+                                                            content: `EMERGENCY TRANSLATION MODE: You MUST translate ALL Korean to ${targetLanguage}. NO Korean characters (한글) should appear in output. This is critical.`
+                                                        },
+                                                        {
+                                                            role: 'user',
+                                                            content: `Translate this to ${targetLanguage}, removing ALL Korean: ${block.text}`
+                                                        }
+                                                    ],
+                                                    temperature: 0.5
+                                                })
+                                            });
+
+                                            if (response.ok) {
+                                                const data = await response.json();
+                                                const finalAttempt = data.choices[0].message.content.trim();
+                                                
+                                                if (finalAttempt && !koreanRegex.test(finalAttempt)) {
+                                                    console.log(`블록 ${block.index}: 최종 시도 성공!`);
+                                                    translatedText = finalAttempt;
+                                                } else {
+                                                    console.error(`블록 ${block.index}: 모든 시도 실패. 한글 여전히 존재.`);
+                                                    errorCount++;
+                                                }
+                                            }
+                                        } catch (finalError) {
+                                            console.error(`블록 ${block.index}: 최종 시도 실패:`, finalError);
+                                            errorCount++;
+                                        }
+                                    }
+                                }
+                                
+                                break; // 번역 완료 (한글 체크 완료)
+                                
+                            } catch (error) {
+                                retryCount++;
+                                console.error(`블록 ${block.index} 번역 실패 (${retryCount}번째 시도):`, error);
+                                
+                                if (retryCount >= maxAutoRetries) {
+                                    console.error(`블록 ${block.index}: 최대 재시도 횟수(${maxAutoRetries}) 도달. 원본 사용.`);
+                                    translatedText = `[번역 실패 - 원본] ${block.text}`;
+                                    errorCount++;
+                                    break;
+                                }
+                                
+                                // 재시도 전 대기 (지수 백오프)
+                                const waitTime = Math.min(1000 * Math.pow(2, retryCount - 1), 30000); // 최대 30초
+                                console.log(`${waitTime}ms 후 재시도...`);
+                                await new Promise(resolve => setTimeout(resolve, waitTime));
+                            }
+                        }
+
+                        if (speakerIsCancelled) break;
+
+                        translatedBlocks.push({
+                            index: block.index,
+                            timecode: block.timecode,  // 'time' → 'timecode'로 변경
+                            text: translatedText
+                        });
+
+                        speakerCurrentBlocksCompleted = j + 1;
+                        updateSpeakerProgress(file.name, j + 1, blocks.length, i + 1, files.length);
+
+                        // API 호출 간 딜레이
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                    }
+
+                    if (speakerIsCancelled) break;
+
+                    // 타이머 중지
+                    stopSpeakerTimer();
+
+                    // 개별 파일 다운로드 (원본 파일명 유지)
+                    const srtContent = generateSRT(translatedBlocks);
+                    const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = '번역완료/' + file.name;  // "번역완료" 폴더 안에 저장
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    if (errorCount > 0) {
+                        console.log(`${file.name}: ${errorCount}개 블록 번역 실패`);
+                    }
+                }
+
+                // 성공 메시지
+                if (!speakerIsCancelled) {
+                    progressSection.style.display = 'none';
+                    controlButtons.style.display = 'none';
+                    alert(`모든 파일 번역 완료! (${files.length}개 파일)`);
+                }
+
+            } catch (error) {
+                console.error('번역 오류:', error);
+                stopSpeakerTimer();
+                progressSection.style.display = 'none';
+                controlButtons.style.display = 'none';
+                errorSection.style.display = 'block';
+                document.getElementById('speakerErrorText').textContent = error.message;
+            } finally {
+                this.disabled = false;
+                stopSpeakerTimer();
+            }
+        });
+
+        // 화자명 번역 일시정지 버튼
+        document.getElementById('speakerPauseBtn').addEventListener('click', () => {
+            speakerIsPaused = true;
+            speakerPauseStartTime = Date.now();
+            speakerTotalPauseStartTime = Date.now();
+            document.getElementById('speakerPauseBtn').style.display = 'none';
+            document.getElementById('speakerResumeBtn').style.display = 'block';
+            document.getElementById('speakerPauseNotice').style.display = 'block';
+            document.getElementById('speakerSpinner').classList.add('paused');
+        });
+
+        // 화자명 번역 재개 버튼
+        document.getElementById('speakerResumeBtn').addEventListener('click', () => {
+            speakerIsPaused = false;
+            if (speakerPauseStartTime) {
+                const pauseDuration = Date.now() - speakerPauseStartTime;
+                speakerTotalPausedTime += pauseDuration;
+                speakerTotalPausedTime2 += pauseDuration;
+                speakerPauseStartTime = null;
+                speakerTotalPauseStartTime = null;
+            }
+            document.getElementById('speakerPauseBtn').style.display = 'block';
+            document.getElementById('speakerResumeBtn').style.display = 'none';
+            document.getElementById('speakerPauseNotice').style.display = 'none';
+            document.getElementById('speakerSpinner').classList.remove('paused');
+        });
+
+        // 화자명 번역 취소 버튼
+        document.getElementById('speakerCancelBtn').addEventListener('click', () => {
+            if (confirm('번역을 취소하시겠습니까?\n진행 중인 작업이 중단됩니다.')) {
+                speakerIsCancelled = true;
+                stopSpeakerTimer();
+                document.getElementById('speakerProgressSection').style.display = 'none';
+                document.getElementById('speakerControlButtons').style.display = 'none';
+                document.getElementById('speakerTranslateBtn').disabled = false;
+                alert('번역이 취소되었습니다.');
+            }
+        });
+
+        // ========================================
+        // 2. 전체 번역
+        // ========================================
+
+        // 파일 선택 이벤트
+        const fileInput = document.getElementById('srt_file');
+        const fileNameDisplay = document.getElementById('file-name');
+        
+        fileInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                fileNameDisplay.textContent = 
+                    this.files.length === 1 ? this.files[0].name : `${this.files.length}개 파일 선택됨`;
+            } else {
+                fileNameDisplay.textContent = '파일을 선택하거나 드래그하세요 (여러 개 가능)';
+            }
+        });
+
+        // 전체 선택/해제
+        document.getElementById('selectAll').addEventListener('click', function() {
+            document.querySelectorAll('input[name="languages"]').forEach(checkbox => {
+                checkbox.checked = true;
+            });
+        });
+
+        document.getElementById('deselectAll').addEventListener('click', function() {
+            document.querySelectorAll('input[name="languages"]').forEach(checkbox => {
+                checkbox.checked = false;
+            });
+        });
+
+        // 드래그 앤 드롭
+        const fileUploadWrapper = document.getElementById('fullTranslateWrapper');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            fileUploadWrapper.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileUploadWrapper.addEventListener(eventName, () => {
+                fileUploadWrapper.classList.add('drag-over');
+            });
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileUploadWrapper.addEventListener(eventName, () => {
+                fileUploadWrapper.classList.remove('drag-over');
+            });
+        });
+        
+        fileUploadWrapper.addEventListener('drop', function(e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                fileNameDisplay.textContent = 
+                    files.length === 1 ? files[0].name : `${files.length}개 파일 선택됨`;
+            }
+        });
+
+        // 폼 제출
+        document.getElementById('translationForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const retryBtn = document.getElementById('retryBtn');
+            const progressSection = document.getElementById('progressSection');
+            const errorSection = document.getElementById('errorSection');
+            const controlButtons = document.getElementById('controlButtons');
+            const errorWarning = document.getElementById('errorWarning');
+            
+            // 제어 변수 초기화
+            isPaused = false;
+            isCancelled = false;
+            
+            submitBtn.disabled = true;
+            retryBtn.style.display = 'none';
+            progressSection.style.display = 'block';
+            controlButtons.style.display = 'flex';
+            errorSection.style.display = 'none';
+            errorWarning.style.display = 'none';
+            document.getElementById('pauseNotice').style.display = 'none';
+            document.getElementById('pauseBtn').style.display = 'block';
+            document.getElementById('resumeBtn').style.display = 'none';
+            
+            translationResults = {};
+            failedBlocks = {};
+            
+            // 전체 타이머 시작
+            startTotalTimer();
+            
+            // 개별 타이머 시작
+            startTimer();
+            
+            try {
+                const apiKey = document.getElementById('api_key').value.trim();
+                if (!apiKey) {
+                    throw new Error('API 키를 입력 또는 저장해주세요.');
+                }
+                
+                const files = fileInput.files;
+                if (!files || files.length === 0) {
+                    throw new Error('SRT 파일을 업로드해주세요.');
+                }
+                
+                selectedLanguages = Array.from(
+                    document.querySelectorAll('input[name="languages"]:checked')
+                ).map(cb => cb.value);
+                
+                if (selectedLanguages.length === 0) {
+                    throw new Error('최소 하나의 언어를 선택해주세요.');
+                }
+
+                let totalFilesProcessed = 0;
+                let totalTranslationsCompleted = 0;
+
+                // 각 파일에 대해 처리
+                for (let fileIdx = 0; fileIdx < files.length; fileIdx++) {
+                    if (isCancelled) break;
+
+                    const file = files[fileIdx];
+                    const fileContent = await file.text();
+                    originalBlocks = parseSRT(fileContent);
+                    
+                    if (originalBlocks.length === 0) {
+                        alert(`${file.name}: SRT 파일을 파싱할 수 없습니다.`);
+                        continue;
+                    }
+                    
+                    console.log(`[${file.name}] 파싱된 블록 수: ${originalBlocks.length}`);
+                    currentFilename = file.name.replace('.srt', '');
+                    
+                    // 각 언어별로 번역
+                    for (let langIdx = 0; langIdx < selectedLanguages.length; langIdx++) {
+                        if (isCancelled) break;
+                        
+                        const langCode = selectedLanguages[langIdx];
+                        const langName = LANGUAGES[langCode];
+                        
+                        // 타이머 리셋 (각 언어마다 새로 시작)
+                        currentLangCompletedBlocks = 0;
+                        startTime = Date.now();
+                        totalPausedTime = 0;
+                        
+                        const result = await translateBlocks(
+                            apiKey, 
+                            originalBlocks, 
+                            langCode,
+                            (code, current, total, errorCount) => {
+                                // 진행 상태에 파일 정보 추가
+                                document.getElementById('progressText').textContent = 
+                                    `${langName}: ${current} / ${total} 블록 (${Math.round((current/total)*100)}%)`;
+                                document.getElementById('progressDetails').textContent = 
+                                    `파일: ${fileIdx + 1} / ${files.length} | 언어: ${langIdx + 1} / ${selectedLanguages.length}`;
+                                currentLangCompletedBlocks = current;
+                                currentLangTotalBlocks = total;
+                            }
+                        );
+                        
+                        translationResults[langCode] = result.translatedBlocks;
+                        failedBlocks[langCode] = result.errors.map(e => e.originalIndex);
+                        
+                        // 각 언어 번역 완료 즉시 다운로드 (파일명_언어명.srt 형식)
+                        if (!isCancelled) {
+                            const outputFilename = `${currentFilename}_${langName.split(' ')[0]}.srt`;
+                            const srtContent = generateSRT(result.translatedBlocks);
+                            downloadSRTFile(outputFilename, srtContent);
+                            
+                            totalTranslationsCompleted++;
+                            
+                            // 완료 알림
+                            document.getElementById('progressDetails').textContent = 
+                                `✅ ${file.name} → ${langName} 번역 완료!`;
+                            
+                            // 잠시 대기 (사용자가 알림 볼 수 있도록)
+                            await delay(500);
+                        }
+                    }
+
+                    totalFilesProcessed++;
+                }
+                
+                if (isCancelled) {
+                    return;
+                }
+                
+                stopTimer();
+                progressSection.style.display = 'none';
+                controlButtons.style.display = 'none';
+                
+                let message = `✅ 모든 번역이 완료되었습니다!\n\n${totalFilesProcessed}개 파일 × ${selectedLanguages.length}개 언어 = 총 ${totalTranslationsCompleted}개 파일이 다운로드되었습니다.`;
+                alert(message);
+                
+            } catch (error) {
+                if (error.message === '번역이 취소되었습니다.') {
+                    return;
+                }
+                console.error('Error:', error);
+                stopTimer();
+                progressSection.style.display = 'none';
+                controlButtons.style.display = 'none';
+                errorSection.style.display = 'block';
+                document.getElementById('errorText').textContent = error.message;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        // ========================================
+        // 3. 검토 (블록번호, 한글) 기능
+        // ========================================
+
+        const reviewFilesInput = document.getElementById('review_files');
+        const reviewFileNames = document.getElementById('review-file-names');
+        const reviewBtn = document.getElementById('reviewBtn');
+        const reviewResultSection = document.getElementById('reviewResultSection');
+        const reviewResultContent = document.getElementById('reviewResultContent');
+        const reviewErrorSection = document.getElementById('reviewErrorSection');
+        const reviewErrorText = document.getElementById('reviewErrorText');
+        const downloadReviewLogBtn = document.getElementById('downloadReviewLogBtn');
+
+        let reviewLogContent = '';
+
+        // 파일 선택 이벤트
+        reviewFilesInput.addEventListener('change', function() {
+            if (this.files && this.files.length > 0) {
+                reviewFileNames.textContent = 
+                    this.files.length === 1 ? this.files[0].name : `${this.files.length}개 파일 선택됨`;
+            } else {
+                reviewFileNames.textContent = '파일을 선택하거나 드래그하세요 (여러 개 가능)';
+            }
+        });
+
+        // 드래그 앤 드롭
+        const reviewFilesWrapper = document.getElementById('reviewFilesWrapper');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            reviewFilesWrapper.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            reviewFilesWrapper.addEventListener(eventName, () => {
+                reviewFilesWrapper.classList.add('drag-over');
+            });
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            reviewFilesWrapper.addEventListener(eventName, () => {
+                reviewFilesWrapper.classList.remove('drag-over');
+            });
+        });
+        
+        reviewFilesWrapper.addEventListener('drop', function(e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                reviewFilesInput.files = files;
+                reviewFileNames.textContent = 
+                    files.length === 1 ? files[0].name : `${files.length}개 파일 선택됨`;
+            }
+        });
+
+        // 검토 시작 버튼
+        reviewBtn.addEventListener('click', async function() {
+            const files = reviewFilesInput.files;
+            
+            if (!files || files.length === 0) {
+                alert('최소 1개 이상의 SRT 파일을 업로드해주세요.');
+                return;
+            }
+
+            // UI 초기화
+            reviewErrorSection.style.display = 'none';
+            reviewResultSection.style.display = 'none';
+            reviewBtn.disabled = true;
+            reviewBtn.textContent = '🔍 검토 중...';
+
+            try {
+                const koreanRegex = /[\u3131-\u314e\u314f-\u3163\uac00-\ud7a3]/;
+                let logText = '═══════════════════════════════════════════════\n';
+                logText += '       SRT 파일 검토 결과\n';
+                logText += `       생성 시간: ${new Date().toLocaleString('ko-KR')}\n`;
+                logText += '═══════════════════════════════════════════════\n\n';
+
+                let totalFiles = files.length;
+                let totalKoreanBlocks = 0;
+
+                // 각 파일 검토
+                for (let i = 0; i < files.length; i++) {
+                    const file = files[i];
+                    const content = await file.text();
+                    const blocks = parseSRT(content);
+
+                    logText += `\n📄 파일 ${i + 1}/${totalFiles}: ${file.name}\n`;
+                    logText += '─────────────────────────────────────────────\n';
+
+                    if (blocks.length === 0) {
+                        logText += '  ⚠️ 파일 파싱 실패\n';
+                        logText += '  블록을 찾을 수 없습니다.\n';
+                        continue;
+                    }
+
+                    // 마지막 블록 번호
+                    const lastBlock = blocks[blocks.length - 1];
+                    logText += `  📊 총 블록 수: ${blocks.length}개\n`;
+                    logText += `  🔢 마지막 블록번호: ${lastBlock.index}\n`;
+
+                    // 한글이 있는 블록 찾기
+                    const koreanBlocks = [];
+                    for (const block of blocks) {
+                        if (koreanRegex.test(block.text)) {
+                            koreanBlocks.push({
+                                index: block.index,
+                                text: block.text
+                            });
+                        }
+                    }
+
+                    if (koreanBlocks.length > 0) {
+                        logText += `  ⚠️ 한글 발견: ${koreanBlocks.length}개 블록\n\n`;
+                        
+                        koreanBlocks.forEach((kb, idx) => {
+                            logText += `  ${idx + 1}. 블록 ${kb.index}:\n`;
+                            // 텍스트를 30자까지만 표시 (너무 길면 잘라냄)
+                            const displayText = kb.text.length > 50 
+                                ? kb.text.substring(0, 50) + '...' 
+                                : kb.text;
+                            logText += `     "${displayText}"\n`;
+                            
+                            // 한글 부분만 하이라이트
+                            const koreanParts = kb.text.match(koreanRegex);
+                            if (koreanParts && koreanParts.length > 0) {
+                                logText += `     한글: ${koreanParts.slice(0, 10).join(', ')}${koreanParts.length > 10 ? '...' : ''}\n`;
+                            }
+                            logText += '\n';
+                        });
+
+                        totalKoreanBlocks += koreanBlocks.length;
+                    } else {
+                        logText += `  ✅ 한글 없음 - 정상\n`;
+                    }
+
+                    logText += '\n';
+                }
+
+                // 요약
+                logText += '═══════════════════════════════════════════════\n';
+                logText += '       검토 요약\n';
+                logText += '═══════════════════════════════════════════════\n';
+                logText += `  • 총 파일 수: ${totalFiles}개\n`;
+                logText += `  • 한글 발견 블록: ${totalKoreanBlocks}개\n`;
+                if (totalKoreanBlocks === 0) {
+                    logText += `  • 상태: ✅ 모든 파일 정상\n`;
+                } else {
+                    logText += `  • 상태: ⚠️ 재번역 필요\n`;
+                }
+                logText += '═══════════════════════════════════════════════\n';
+
+                // 결과 표시
+                reviewLogContent = logText;
+                reviewResultContent.textContent = logText;
+                reviewResultSection.style.display = 'block';
+
+                console.log('검토 완료:', logText);
+
+            } catch (error) {
+                console.error('검토 오류:', error);
+                reviewErrorSection.style.display = 'block';
+                reviewErrorText.textContent = `검토 중 오류가 발생했습니다: ${error.message}`;
+            } finally {
+                reviewBtn.disabled = false;
+                reviewBtn.textContent = '🔍 검토 시작';
+            }
+        });
+
+        // 로그 다운로드 버튼
+        downloadReviewLogBtn.addEventListener('click', function() {
+            if (!reviewLogContent) {
+                alert('검토 결과가 없습니다.');
+                return;
+            }
+
+            const blob = new Blob([reviewLogContent], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            a.download = `SRT_검토결과_${timestamp}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        });
+
+        // ========================================
+        // 단어 수정 기능
+        // ========================================
+        
+        // 단어 쌍 추가 함수
+        function addWordPair() {
+            const list = document.getElementById('wordReplacementList');
+            const newItem = document.createElement('div');
+            newItem.className = 'word-replacement-item';
+            newItem.innerHTML = `
+                <div class="word-input-group">
+                    <div class="word-input-wrapper">
+                        <label class="word-input-label">기존 단어</label>
+                        <input type="text" class="word-input from-word" placeholder="예: 수지">
+                    </div>
+                    <div class="word-input-wrapper">
+                        <label class="word-input-label">변경할 단어</label>
+                        <input type="text" class="word-input to-word" placeholder="예: suji">
+                    </div>
+                </div>
+                <button type="button" class="btn-remove" onclick="removeWordPair(this)">🗑️</button>
+            `;
+            list.appendChild(newItem);
+        }
+
+        // 단어 쌍 제거 함수
+        function removeWordPair(button) {
+            const list = document.getElementById('wordReplacementList');
+            const items = list.querySelectorAll('.word-replacement-item');
+            
+            // 최소 1개는 남겨두기
+            if (items.length > 1) {
+                button.closest('.word-replacement-item').remove();
+            } else {
+                alert('최소 1개의 단어 쌍은 있어야 합니다.');
+            }
+        }
+
+        // 단어 수정 파일 선택 이벤트
+        const replaceFileInput = document.getElementById('replace_file');
+        const replaceFileName = document.getElementById('replace-file-name');
+        
+        replaceFileInput.addEventListener('change', function() {
+            const count = this.files.length;
+            if (count > 0) {
+                const names = Array.from(this.files).map(f => f.name).join(', ');
+                replaceFileName.textContent = 
+                    `${count}개 파일 선택됨: ${names.substring(0, 60)}${names.length > 60 ? '...' : ''}`;
+            } else {
+                replaceFileName.textContent = '파일을 선택하거나 드래그하세요 (여러 개 가능)';
+            }
+        });
+
+        // 단어 수정 파일 드래그 앤 드롭
+        const replaceFileWrapper = document.getElementById('replaceFileWrapper');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            replaceFileWrapper.addEventListener(eventName, e => {
+                e.preventDefault();
+                e.stopPropagation();
+            });
+        });
+        
+        ['dragenter', 'dragover'].forEach(eventName => {
+            replaceFileWrapper.addEventListener(eventName, () => {
+                replaceFileWrapper.classList.add('drag-over');
+            });
+        });
+        
+        ['dragleave', 'drop'].forEach(eventName => {
+            replaceFileWrapper.addEventListener(eventName, () => {
+                replaceFileWrapper.classList.remove('drag-over');
+            });
+        });
+        
+        replaceFileWrapper.addEventListener('drop', function(e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                replaceFileInput.files = files;
+                const names = Array.from(files).map(f => f.name).join(', ');
+                replaceFileName.textContent = 
+                    `${files.length}개 파일 선택됨: ${names.substring(0, 60)}${names.length > 60 ? '...' : ''}`;
+            }
+        });
+
+        /**
+         * 단어 수정 폼 제출
+         */
+        document.getElementById('replaceForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const files = replaceFileInput.files;
+            if (files.length === 0) {
+                alert('파일을 선택해주세요.');
+                return;
+            }
+
+            // 단어 쌍 수집
+            const wordPairs = [];
+            const items = document.querySelectorAll('.word-replacement-item');
+            
+            for (const item of items) {
+                const fromWord = item.querySelector('.from-word').value.trim();
+                const toWord = item.querySelector('.to-word').value.trim();
+                
+                if (fromWord && toWord) {
+                    wordPairs.push({ from: fromWord, to: toWord });
+                }
+            }
+
+            if (wordPairs.length === 0) {
+                alert('최소 하나의 단어 쌍을 입력해주세요.');
+                return;
+            }
+
+            const replaceBtn = document.getElementById('replaceBtn');
+            const progressSection = document.getElementById('replaceProgressSection');
+            const errorSection = document.getElementById('replaceErrorSection');
+            const spinner = document.getElementById('replaceSpinner');
+
+            replaceBtn.disabled = true;
+            progressSection.style.display = 'block';
+            errorSection.style.display = 'none';
+            spinner.classList.add('active');
+
+            try {
+                // 파일이 1개인 경우
+                if (files.length === 1) {
+                    const file = files[0];
+                    
+                    document.getElementById('replaceProgressText').textContent = 
+                        `파일 읽는 중: ${file.name}`;
+
+                    // 파일 읽기
+                    const fileContent = await file.text();
+                    let modifiedContent = fileContent;
+
+                    // 각 단어 쌍에 대해 치환 수행
+                    let totalReplacements = 0;
+                    const replacementDetails = [];
+
+                    for (let i = 0; i < wordPairs.length; i++) {
+                        const { from, to } = wordPairs[i];
+                        
+                        document.getElementById('replaceProgressText').textContent = 
+                            `단어 수정 중: "${from}" → "${to}"`;
+                        document.getElementById('replaceProgressDetails').textContent = 
+                            `${i + 1} / ${wordPairs.length} 단어`;
+
+                        // 전역 치환 (대소문자 구분)
+                        const regex = new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                        const matches = modifiedContent.match(regex);
+                        const count = matches ? matches.length : 0;
+                        
+                        modifiedContent = modifiedContent.replace(regex, to);
+                        
+                        totalReplacements += count;
+                        if (count > 0) {
+                            replacementDetails.push(`"${from}" → "${to}": ${count}회`);
+                        }
+
+                        // 잠시 대기 (UI 업데이트용)
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                    }
+
+                    // 결과 다운로드
+                    document.getElementById('replaceProgressText').textContent = '파일 생성 중...';
+                    
+                    const blob = new Blob([modifiedContent], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = file.name;
+                    
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    progressSection.style.display = 'none';
+                    spinner.classList.remove('active');
+
+                    let message = `✅ 단어 수정 완료!\n\n파일: ${file.name}\n총 ${totalReplacements}회 치환되었습니다.`;
+                    if (replacementDetails.length > 0) {
+                        message += '\n\n상세 내역:\n' + replacementDetails.join('\n');
+                    }
+                    alert(message);
+                    
+                } else {
+                    // 파일이 2개 이상인 경우 ZIP으로
+                    const zip = new JSZip();
+                    const allReplacementDetails = [];
+
+                    for (let fileIdx = 0; fileIdx < files.length; fileIdx++) {
+                        const file = files[fileIdx];
+                        
+                        document.getElementById('replaceProgressText').textContent = 
+                            `처리 중: ${file.name}`;
+                        document.getElementById('replaceProgressDetails').textContent = 
+                            `${fileIdx + 1} / ${files.length} 파일`;
+
+                        try {
+                            const fileContent = await file.text();
+                            let modifiedContent = fileContent;
+                            let totalReplacements = 0;
+                            const fileReplacementDetails = [];
+
+                            // 각 단어 쌍에 대해 치환 수행
+                            for (let i = 0; i < wordPairs.length; i++) {
+                                const { from, to } = wordPairs[i];
+
+                                // 전역 치환 (대소문자 구분)
+                                const regex = new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                                const matches = modifiedContent.match(regex);
+                                const count = matches ? matches.length : 0;
+                                
+                                modifiedContent = modifiedContent.replace(regex, to);
+                                
+                                totalReplacements += count;
+                                if (count > 0) {
+                                    fileReplacementDetails.push(`  "${from}" → "${to}": ${count}회`);
+                                }
+                            }
+
+                            zip.file(file.name, modifiedContent);
+                            
+                            allReplacementDetails.push(`📄 ${file.name}: 총 ${totalReplacements}회 치환`);
+                            if (fileReplacementDetails.length > 0) {
+                                allReplacementDetails.push(...fileReplacementDetails);
+                            }
+                            allReplacementDetails.push('');
+                            
+                        } catch (error) {
+                            console.error(`파일 처리 실패: ${file.name}`, error);
+                            allReplacementDetails.push(`⚠️ ${file.name}: 처리 실패 - ${error.message}`);
+                            allReplacementDetails.push('');
+                        }
+                    }
+
+                    // 로그 파일 추가
+                    const logContent = '📝 단어 수정 로그\n' + '='.repeat(50) + '\n\n' + allReplacementDetails.join('\n');
+                    zip.file('단어_수정_로그.txt', logContent);
+
+                    // ZIP 다운로드
+                    document.getElementById('replaceProgressText').textContent = 'ZIP 파일 생성 중...';
+                    const zipBlob = await zip.generateAsync({ 
+                        type: 'blob',
+                        compression: 'DEFLATE',
+                        compressionOptions: { level: 9 }
+                    });
+                    
+                    const url = URL.createObjectURL(zipBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = '2-2 화자명 전체 변경.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    progressSection.style.display = 'none';
+                    spinner.classList.remove('active');
+                    alert(`✅ 단어 수정 완료!\n\n${files.length}개 파일이 처리되어 다운로드되었습니다.`);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                progressSection.style.display = 'none';
+                spinner.classList.remove('active');
+                errorSection.style.display = 'block';
+                document.getElementById('replaceErrorText').textContent = error.message;
+            } finally {
+                replaceBtn.disabled = false;
+            }
+        });
+
+        // ========================================
+        // 화자명 변경 기능
+        // ========================================
+        
+        const SPEAKER_STORAGE_KEY = 'srt_speaker_mappings';
+        const LANGUAGE_CODES = {
+            '영어': 'en', 'English': 'en', 'en': 'en',
+            '스페인어': 'es', 'español': 'es', 'es': 'es',
+            '일본어': 'ja', 'ja': 'ja',
+            '중국어': 'zh', 'zh': 'zh', 'zh-Hans': 'zh',
+            '번체': 'zh-Hant', '繁體中文': 'zh-Hant', 'zh-Hant': 'zh-Hant', 'zh-TW': 'zh-Hant',
+            '태국어': 'th', 'th': 'th',
+            '인도네시아어': 'id', 'id': 'id'
+        };
+
+        // 페이지 로드 시 저장된 화자 매핑 불러오기
+        window.addEventListener('DOMContentLoaded', () => {
+            loadSpeakerMappings();
+        });
+
+        // 화자 매핑 불러오기
+        function loadSpeakerMappings() {
+            const saved = localStorage.getItem(SPEAKER_STORAGE_KEY);
+            if (saved) {
+                try {
+                    const mappings = JSON.parse(saved);
+                    const list = document.getElementById('speakerMappingList');
+                    list.innerHTML = '';
+                    mappings.forEach(mapping => {
+                        addSpeakerMappingItem(mapping);
+                    });
+                } catch (e) {
+                    console.error('화자 매핑 불러오기 실패:', e);
+                }
+            }
+        }
+
+        // 화자 매핑 저장
+        function saveSpeakerMappings() {
+            const items = document.querySelectorAll('.speaker-mapping-item');
+            const mappings = [];
+            
+            items.forEach(item => {
+                const kr = item.querySelector('.speaker-kr-input').value.trim();
+                if (kr) {
+                    const mapping = { kr };
+                    item.querySelectorAll('.speaker-lang-input').forEach(input => {
+                        const lang = input.getAttribute('data-lang');
+                        mapping[lang] = input.value.trim();
+                    });
+                    mappings.push(mapping);
+                }
+            });
+            
+            localStorage.setItem(SPEAKER_STORAGE_KEY, JSON.stringify(mappings));
+        }
+
+        // 화자 매핑 항목 추가
+        function addSpeakerMapping(data = null) {
+            addSpeakerMappingItem(data);
+            saveSpeakerMappings();
+        }
+
+        function addSpeakerMappingItem(data = null) {
+            const list = document.getElementById('speakerMappingList');
+            const item = document.createElement('div');
+            item.className = 'speaker-mapping-item';
+            
+            const kr = data?.kr || '';
+            const en = data?.en || '';
+            const es = data?.es || '';
+            const ja = data?.ja || '';
+            const zh = data?.zh || '';
+            const zhHant = data?.['zh-Hant'] || '';
+            const th = data?.th || '';
+            const id = data?.id || '';
+            
+            item.innerHTML = `
+                <div class="speaker-mapping-header">
+                    <input type="text" class="speaker-kr-input" placeholder="한국어 이름 (예: 수지)" value="${kr}" onchange="saveSpeakerMappings()">
+                    <button type="button" class="btn-remove" onclick="removeSpeakerMapping(this)" style="margin-left: 10px;">🗑️</button>
+                </div>
+                <div class="speaker-lang-grid">
+                    <div class="speaker-lang-item">
+                        <label class="speaker-lang-label">영어 (English)</label>
+                        <input type="text" class="speaker-lang-input" data-lang="en" placeholder="Suji" value="${en}" onchange="saveSpeakerMappings()">
+                    </div>
+                    <div class="speaker-lang-item">
+                        <label class="speaker-lang-label">스페인어 (Español)</label>
+                        <input type="text" class="speaker-lang-input" data-lang="es" placeholder="Suji" value="${es}" onchange="saveSpeakerMappings()">
+                    </div>
+                    <div class="speaker-lang-item">
+                        <label class="speaker-lang-label">인도네시아어 (ID)</label>
+                        <input type="text" class="speaker-lang-input" data-lang="id" placeholder="Suji" value="${id}" onchange="saveSpeakerMappings()">
+                    </div>
+                    <div class="speaker-lang-item">
+                        <label class="speaker-lang-label">중국어 (简体)</label>
+                        <input type="text" class="speaker-lang-input" data-lang="zh" placeholder="秀智" value="${zh}" onchange="saveSpeakerMappings()">
+                    </div>
+                    <div class="speaker-lang-item">
+                        <label class="speaker-lang-label">번체 (繁體)</label>
+                        <input type="text" class="speaker-lang-input" data-lang="zh-Hant" placeholder="秀智" value="${zhHant}" onchange="saveSpeakerMappings()">
+                    </div>
+                    <div class="speaker-lang-item">
+                        <label class="speaker-lang-label">태국어 (ไทย)</label>
+                        <input type="text" class="speaker-lang-input" data-lang="th" placeholder="ซูจี" value="${th}" onchange="saveSpeakerMappings()">
+                    </div>
+                    <div class="speaker-lang-item">
+                        <label class="speaker-lang-label">일본어 (日本語)</label>
+                        <input type="text" class="speaker-lang-input" data-lang="ja" placeholder="スジ" value="${ja}" onchange="saveSpeakerMappings()">
+                    </div>
+                </div>
+            `;
+            
+            list.appendChild(item);
+        }
+
+        // 화자 매핑 제거
+        function removeSpeakerMapping(button) {
+            button.closest('.speaker-mapping-item').remove();
+            saveSpeakerMappings();
+        }
+
+        // 전체 삭제
+        function clearAllSpeakers() {
+            if (confirm('모든 화자 매핑을 삭제하시겠습니까?')) {
+                document.getElementById('speakerMappingList').innerHTML = '';
+                localStorage.removeItem(SPEAKER_STORAGE_KEY);
+                alert('전체 삭제되었습니다.');
+            }
+        }
+
+        // 다운로드
+        function downloadSpeakerMapping() {
+            const saved = localStorage.getItem(SPEAKER_STORAGE_KEY);
+            if (!saved) {
+                alert('저장된 화자 매핑이 없습니다.');
+                return;
+            }
+            
+            const blob = new Blob([saved], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'speaker_mappings.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('화자 매핑 파일이 다운로드되었습니다.');
+        }
+
+        // 업로드
+        function uploadSpeakerMapping(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    const mappings = JSON.parse(content);
+                    
+                    if (!Array.isArray(mappings)) {
+                        throw new Error('올바른 형식이 아닙니다.');
+                    }
+                    
+                    localStorage.setItem(SPEAKER_STORAGE_KEY, content);
+                    loadSpeakerMappings();
+                    alert('화자 매핑이 업로드되었습니다.');
+                } catch (error) {
+                    alert('파일 형식이 올바르지 않습니다: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+            input.value = '';
+        }
+
+        // 파일 선택 이벤트
+        const speakerLangFilesInput = document.getElementById('speaker_lang_files');
+        const speakerLangFileNames = document.getElementById('speaker-lang-file-names');
+        
+        speakerLangFilesInput.addEventListener('change', function() {
+            const count = this.files.length;
+            if (count > 0) {
+                const names = Array.from(this.files).map(f => f.name).join(', ');
+                speakerLangFileNames.textContent = 
+                    `${count}개 파일 선택됨: ${names.substring(0, 60)}${names.length > 60 ? '...' : ''}`;
+            } else {
+                speakerLangFileNames.textContent = 
+                    '언어별 SRT 파일 선택 (영어, 태국어, 중국어, 번체, 일본어, 스페인어, 인도네시아어)';
+            }
+        });
+
+        // 화자 파일 드래그 앤 드롭
+        const speakerLangFilesWrapper = document.getElementById('speakerLangFilesWrapper');
+        
+        if (speakerLangFilesWrapper) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                speakerLangFilesWrapper.addEventListener(eventName, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            });
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                speakerLangFilesWrapper.addEventListener(eventName, () => {
+                    speakerLangFilesWrapper.classList.add('drag-over');
+                });
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                speakerLangFilesWrapper.addEventListener(eventName, () => {
+                    speakerLangFilesWrapper.classList.remove('drag-over');
+                });
+            });
+            
+            speakerLangFilesWrapper.addEventListener('drop', function(e) {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    speakerLangFilesInput.files = files;
+                    const names = Array.from(files).map(f => f.name).join(', ');
+                    speakerLangFileNames.textContent = 
+                        `${files.length}개 파일 선택됨: ${names.substring(0, 60)}${names.length > 60 ? '...' : ''}`;
+                }
+            });
+        }
+
+        // 화자명 변경 처리 (전체 치환 방식)
+        async function processSpeakerChange() {
+            const langFiles = document.getElementById('speaker_lang_files').files;
+            
+            if (langFiles.length === 0) {
+                alert('수정할 언어별 SRT 파일을 선택해주세요.');
+                return;
+            }
+            
+            // 화자 매핑 수집
+            const speakerMap = {};
+            const items = document.querySelectorAll('.speaker-mapping-item');
+            
+            if (items.length === 0) {
+                alert('최소 하나의 화자 매핑을 추가해주세요.');
+                return;
+            }
+            
+            items.forEach(item => {
+                const kr = item.querySelector('.speaker-kr-input').value.trim();
+                if (kr) {
+                    speakerMap[kr] = {};
+                    item.querySelectorAll('.speaker-lang-input').forEach(input => {
+                        const lang = input.getAttribute('data-lang');
+                        const value = input.value.trim();
+                        if (value) {
+                            speakerMap[kr][lang] = value;
+                        }
+                    });
+                }
+            });
+            
+            const btn = document.getElementById('speakerChangeBtn');
+            const progressSection = document.getElementById('speakerProgressSection');
+            const errorSection = document.getElementById('speakerErrorSection');
+            const spinner = document.getElementById('speakerSpinner');
+            
+            btn.disabled = true;
+            progressSection.style.display = 'block';
+            errorSection.style.display = 'none';
+            spinner.classList.add('active');
+            
+            try {
+                const logLines = [];
+                logLines.push('🔍 화자 이름 전체 치환 로그');
+                logLines.push('='.repeat(50));
+                logLines.push('');
+                
+                // 파일이 1개인 경우
+                if (langFiles.length === 1) {
+                    const file = langFiles[0];
+                    const rawLang = file.name.replace('.srt', '');
+                    const langCode = LANGUAGE_CODES[rawLang] || rawLang;
+                    
+                    document.getElementById('speakerProgressText').textContent = 
+                        `처리 중: ${file.name}`;
+                    
+                    logLines.push(`🌍 [${rawLang}] 처리 시작`);
+                    
+                    let content = await file.text();
+                    let totalReplacements = 0;
+                    
+                    // 각 한국어 이름을 해당 언어 이름으로 전체 치환
+                    for (const [krName, langMap] of Object.entries(speakerMap)) {
+                        if (langMap[langCode]) {
+                            const targetName = langMap[langCode];
+                            
+                            // 전역 치환 (대소문자 구분)
+                            const regex = new RegExp(krName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                            const matches = content.match(regex);
+                            const count = matches ? matches.length : 0;
+                            
+                            if (count > 0) {
+                                content = content.replace(regex, targetName);
+                                totalReplacements += count;
+                                logLines.push(`  ✏️ "${krName}" → "${targetName}": ${count}회 치환`);
+                            }
+                        }
+                    }
+                    
+                    logLines.push(`✅ 저장 완료 → ${file.name} (총 ${totalReplacements}회 치환)`);
+                    
+                    // 단일 파일 다운로드
+                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = file.name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    progressSection.style.display = 'none';
+                    spinner.classList.remove('active');
+                    
+                    let message = `✅ 화자명 전체 치환 완료!\n\n파일: ${file.name}\n총 ${totalReplacements}회 치환`;
+                    if (logLines.length > 3) {
+                        message += '\n\n상세 내역:\n' + logLines.slice(3).join('\n');
+                    }
+                    alert(message);
+                    
+                } else {
+                    // 파일이 2개 이상인 경우 ZIP으로
+                    const zip = new JSZip();
+                    
+                    // 각 언어별 파일 처리
+                    for (let i = 0; i < langFiles.length; i++) {
+                        const file = langFiles[i];
+                        const rawLang = file.name.replace('.srt', '');
+                        const langCode = LANGUAGE_CODES[rawLang] || rawLang;
+                        
+                        document.getElementById('speakerProgressText').textContent = 
+                            `처리 중: ${file.name}`;
+                        document.getElementById('speakerProgressDetails').textContent = 
+                            `${i + 1} / ${langFiles.length} 파일`;
+                        
+                        logLines.push(`🌍 [${rawLang}] 처리 시작`);
+                        
+                        try {
+                            let content = await file.text();
+                            let totalReplacements = 0;
+                            
+                            // 각 한국어 이름을 해당 언어 이름으로 전체 치환
+                            for (const [krName, langMap] of Object.entries(speakerMap)) {
+                                if (langMap[langCode]) {
+                                    const targetName = langMap[langCode];
+                                    
+                                    // 전역 치환 (대소문자 구분)
+                                    const regex = new RegExp(krName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                                    const matches = content.match(regex);
+                                    const count = matches ? matches.length : 0;
+                                    
+                                    if (count > 0) {
+                                        content = content.replace(regex, targetName);
+                                        totalReplacements += count;
+                                        logLines.push(`  ✏️ "${krName}" → "${targetName}": ${count}회 치환`);
+                                    }
+                                }
+                            }
+                            
+                            zip.file(file.name, content);
+                            logLines.push(`✅ 저장 완료 → ${file.name} (총 ${totalReplacements}회 치환)`);
+                            
+                        } catch (error) {
+                            logLines.push(`⚠️ ${file.name} 처리 실패: ${error.message}`);
+                            console.error(`파일 처리 실패: ${file.name}`, error);
+                        }
+                        
+                        logLines.push('-'.repeat(40));
+                        logLines.push('');
+                    }
+                    
+                    // 로그 파일 추가
+                    zip.file('화자_이름_치환_로그.txt', logLines.join('\n'));
+                    
+                    // ZIP 다운로드
+                    document.getElementById('speakerProgressText').textContent = 'ZIP 파일 생성 중...';
+                    const zipBlob = await zip.generateAsync({ 
+                        type: 'blob',
+                        compression: 'DEFLATE',
+                        compressionOptions: { level: 9 }
+                    });
+                    
+                    const url = URL.createObjectURL(zipBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = '3-1 화자명 변경된 번역.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    
+                    progressSection.style.display = 'none';
+                    spinner.classList.remove('active');
+                    alert(`✅ 화자명 전체 치환 완료!\n\n${langFiles.length}개 파일이 처리되어 다운로드되었습니다.`);
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                progressSection.style.display = 'none';
+                spinner.classList.remove('active');
+                errorSection.style.display = 'block';
+                document.getElementById('speakerErrorText').textContent = error.message;
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        // ========================================
+        // 프리미어 자막 변환 기능
+        // ========================================
+        
+        // 프리미어 파일 선택 이벤트
+        const premiereFileInput = document.getElementById('premiere_files');
+        const premiereFileNames = document.getElementById('premiere-file-names');
+        
+        premiereFileInput.addEventListener('change', function(e) {
+            const files = e.target.files;
+            if (files.length > 0) {
+                const fileNames = Array.from(files).map(f => f.name).join(', ');
+                premiereFileNames.textContent = 
+                    `${files.length}개 파일 선택됨: ${fileNames.substring(0, 50)}${fileNames.length > 50 ? '...' : ''}`;
+            } else {
+                premiereFileNames.textContent = '파일을 선택하거나 드래그하세요 (여러 파일 선택 가능)';
+            }
+        });
+
+        // 프리미어 파일 드래그 앤 드롭
+        const premiereFileUploadWrapper = document.querySelectorAll('.file-upload-wrapper')[1]; // 두 번째 file-upload-wrapper
+        
+        if (premiereFileUploadWrapper) {
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                premiereFileUploadWrapper.addEventListener(eventName, e => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                });
+            });
+            
+            ['dragenter', 'dragover'].forEach(eventName => {
+                premiereFileUploadWrapper.addEventListener(eventName, () => {
+                    premiereFileUploadWrapper.classList.add('drag-over');
+                });
+            });
+            
+            ['dragleave', 'drop'].forEach(eventName => {
+                premiereFileUploadWrapper.addEventListener(eventName, () => {
+                    premiereFileUploadWrapper.classList.remove('drag-over');
+                });
+            });
+            
+            premiereFileUploadWrapper.addEventListener('drop', function(e) {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    premiereFileInput.files = files;
+                    const fileNames = Array.from(files).map(f => f.name).join(', ');
+                    premiereFileNames.textContent = 
+                        `${files.length}개 파일 선택됨: ${fileNames.substring(0, 50)}${fileNames.length > 50 ? '...' : ''}`;
+                }
+            });
+        }
+
+        // 타임코드 패턴 정규식
+        const timecodePattern = /^\d{2};\d{2};\d{2};\d{2} - \d{2};\d{2};\d{2};\d{2}$/;
+        const vPattern = /^V\d+,\s*\d+$/;
+
+        /**
+         * 세미콜론 기반 타임코드를 콜론/콤마 형식으로 변환
+         * 00;00;04;18 → 00:00:04,18
+         */
+        function convertTimecode(tc) {
+            tc = tc.trim();
+            const parts = tc.split(';');
+            if (parts.length !== 4) {
+                throw new Error(`타임코드 형식이 잘못되었습니다: ${tc}`);
+            }
+            return `${parts[0]}:${parts[1]}:${parts[2]},${parts[3]}`;
+        }
+
+        /**
+         * 타임코드 구간 변환
+         * 00:00:14,18  -  00:00:18,27 → 00:00:14,18 --> 00:00:18,27
+         */
+        function formatTimeRange(content) {
+            const rangePattern = /(\d{2}:\d{2}:\d{2},\d{2})\s*-\s*(\d{2}:\d{2}:\d{2},\d{2})/g;
+            return content.replace(rangePattern, (match, start, end) => {
+                return `${start} --> ${end}`;
+            });
+        }
+
+        /**
+         * 프리미어 자막 파일을 표준 SRT 형식으로 변환
+         * 1단계: 블록 번호 추가 및 V 패턴 제거
+         * 2단계: 타임코드 형식 변환
+         */
+        function convertPremiereToSRT(fileContent) {
+            const lines = fileContent.split(/\r?\n/).map(line => line.trim()).filter(line => line);
+            
+            const blocks = [];
+            let i = 0;
+            let blockNum = 1;
+
+            // 1단계: 블록 구조 파싱
+            while (i < lines.length) {
+                if (timecodePattern.test(lines[i])) {
+                    let timecode = lines[i];
+                    i++;
+
+                    // V 패턴 건너뛰기
+                    if (i < lines.length && vPattern.test(lines[i])) {
+                        i++;
+                    }
+
+                    // 대사 수집
+                    const dialogueLines = [];
+                    while (i < lines.length && !timecodePattern.test(lines[i])) {
+                        if (!vPattern.test(lines[i])) {
+                            dialogueLines.push(lines[i]);
+                        }
+                        i++;
+                    }
+
+                    if (dialogueLines.length > 0) {
+                        blocks.push({
+                            index: blockNum,
+                            timecode: timecode,
+                            text: dialogueLines.join('\n')
+                        });
+                        blockNum++;
+                    }
+                } else {
+                    i++;
+                }
+            }
+
+            // 2단계: 타임코드 형식 변환
+            let srtContent = '';
+            for (const block of blocks) {
+                // 세미콜론 기반 타임코드 변환
+                let convertedTimecode = block.timecode.replace(/\d{2};\d{2};\d{2};\d{2}/g, (match) => {
+                    return convertTimecode(match);
+                });
+
+                // " - " → " --> " 변환
+                convertedTimecode = formatTimeRange(convertedTimecode);
+
+                srtContent += `${block.index}\n${convertedTimecode}\n${block.text}\n\n`;
+            }
+
+            return srtContent;
+        }
+
+        /**
+         * 프리미어 변환 폼 제출
+         */
+        document.getElementById('premiereForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const files = premiereFileInput.files;
+            if (files.length === 0) {
+                alert('파일을 선택해주세요.');
+                return;
+            }
+
+            const convertBtn = document.getElementById('convertBtn');
+            const progressSection = document.getElementById('premiereProgressSection');
+            const errorSection = document.getElementById('premiereErrorSection');
+            const spinner = document.getElementById('premiereSpinner');
+
+            convertBtn.disabled = true;
+            progressSection.style.display = 'block';
+            errorSection.style.display = 'none';
+            spinner.classList.add('active');
+
+            try {
+                const totalFiles = files.length;
+
+                // 파일이 1개인 경우
+                if (totalFiles === 1) {
+                    const file = files[0];
+                    
+                    document.getElementById('premiereProgressText').textContent = 
+                        `변환 중: ${file.name}`;
+                    document.getElementById('premiereProgressBar').style.width = '100%';
+                    document.getElementById('premiereProgressPercent').textContent = '100%';
+
+                    const fileContent = await file.text();
+                    const convertedContent = convertPremiereToSRT(fileContent);
+                    
+                    const originalName = file.name.replace('.srt', '');
+                    const newFileName = `${originalName}_converted.srt`;
+                    
+                    // 단일 파일 다운로드
+                    const blob = new Blob([convertedContent], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = newFileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    progressSection.style.display = 'none';
+                    spinner.classList.remove('active');
+                    alert(`✅ 변환 완료!\n\n파일: ${newFileName}`);
+                    
+                } else {
+                    // 파일이 2개 이상인 경우 ZIP으로
+                    const zip = new JSZip();
+
+                    for (let i = 0; i < totalFiles; i++) {
+                        const file = files[i];
+                        const percent = Math.round(((i + 1) / totalFiles) * 100);
+
+                        document.getElementById('premiereProgressText').textContent = 
+                            `변환 중: ${file.name}`;
+                        document.getElementById('premiereProgressDetails').textContent = 
+                            `${i + 1} / ${totalFiles} 파일`;
+                        document.getElementById('premiereProgressBar').style.width = `${percent}%`;
+                        document.getElementById('premiereProgressPercent').textContent = `${percent}%`;
+
+                        try {
+                            const fileContent = await file.text();
+                            const convertedContent = convertPremiereToSRT(fileContent);
+                            
+                            const originalName = file.name.replace('.srt', '');
+                            const newFileName = `${originalName}_converted.srt`;
+                            
+                            zip.file(newFileName, convertedContent);
+                        } catch (error) {
+                            console.error(`파일 변환 실패: ${file.name}`, error);
+                            throw new Error(`${file.name} 변환 실패: ${error.message}`);
+                        }
+                    }
+
+                    // ZIP 파일 생성 및 다운로드
+                    document.getElementById('premiereProgressText').textContent = 'ZIP 파일 생성 중...';
+                    const zipBlob = await zip.generateAsync({ 
+                        type: 'blob',
+                        compression: 'DEFLATE',
+                        compressionOptions: { level: 9 }
+                    });
+
+                    const url = URL.createObjectURL(zipBlob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'converted_subtitles.zip';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+
+                    progressSection.style.display = 'none';
+                    spinner.classList.remove('active');
+                    alert(`✅ 변환 완료!\n\n${totalFiles}개 파일이 변환되어 다운로드되었습니다.`);
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                progressSection.style.display = 'none';
+                spinner.classList.remove('active');
+                errorSection.style.display = 'block';
+                document.getElementById('premiereErrorText').textContent = error.message;
+            } finally {
+                convertBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
+
