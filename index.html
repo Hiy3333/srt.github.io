@@ -847,7 +847,7 @@
                 1. 파일 생성
             </button>
             <button class="tab-button" data-tab="replace">
-                2. 단어 수정
+                2. 단어/화자명 수정
             </button>
             <button class="tab-button" data-tab="translation">
                 3. 각 나라별 번역
@@ -861,43 +861,10 @@
         <main class="main-content">
             <!-- 탭 1: 파일 생성 -->
             <div id="tab-file-generate" class="tab-content active">
-                <!-- TXT → SRT 변환 -->
-                <div class="form-section">
-                    <label class="form-label">
-                        <span class="label-text">📝 1-1. TXT → SRT 변환</span>
-                    </label>
-                    
-                    <div style="margin-bottom: 20px;">
-                        <label for="txt_files" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">
-                            📄 TXT 파일 업로드 (여러 개 선택 가능) <span class="required">*</span>
-                        </label>
-                        <div class="file-upload-wrapper" id="txtFilesWrapper">
-                            <input 
-                                type="file" 
-                                id="txt_files" 
-                                accept=".txt" 
-                                multiple
-                                class="file-input"
-                            >
-                            <label for="txt_files" class="file-upload-label">
-                                <span class="file-icon">📁</span>
-                                <span id="txt-file-names">TXT 파일 선택 (여러 개 가능)</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <button type="button" id="convertTxtBtn" class="btn-primary">
-                        🔄 TXT → SRT 변환
-                    </button>
-                </div>
-
-                <!-- 구분선 -->
-                <hr style="margin: 40px 0; border: none; border-top: 2px solid #e0e0e0;">
-
                 <!-- SRT 복제 -->
                 <div class="form-section">
                     <label class="form-label">
-                        <span class="label-text">📋 1-2. SRT 파일 복제 (다국어 파일 생성)</span>
+                        <span class="label-text">📋 1-1. SRT 파일 복제 (다국어 파일 생성)</span>
                     </label>
                     
                     <div style="margin-bottom: 20px;">
@@ -917,7 +884,7 @@
                             </label>
                         </div>
                         <small style="display: block; margin-top: 8px; color: #666; font-size: 0.9rem;">
-                            💡 영어, 일본어, 중국어, 번체, 인도네시아어, 스페인어, 태국어 총 7개 파일로 복제됩니다
+                            💡 영어, 일본어, 중국어, 인도네시아어, 스페인어, 태국어 총 6개 파일로 복제됩니다
                         </small>
                     </div>
 
@@ -1288,44 +1255,48 @@
             </form>
             </div>
 
-            <!-- 탭 2: 단어 수정 -->
+            <!-- 탭 2: 단어/화자명 수정 -->
             <div id="tab-replace" class="tab-content">
                 <form id="replaceForm">
-                    <!-- 2-1. 단어 수정 -->
+                    <!-- 2-1. 단어/화자명 수정 -->
                     <div class="form-section">
                         <label class="form-label">
-                            <span class="label-text">✏️ 2-1. 단어 수정</span>
+                            <span class="label-text">✏️ 2-1. 단어/화자명 수정</span>
                         </label>
                     </div>
 
-                    <!-- 파일 업로드 -->
+                    <!-- 파일 업로드 (통합) -->
                     <div class="form-section">
-                        <label for="replace_file" class="form-label">
-                            <span class="label-text">📄 SRT 파일 업로드 (여러 개 선택 가능)</span>
+                        <label for="combined_files" class="form-label">
+                            <span class="label-text">🌍 수정할 언어별 SRT 파일 (여러 개 선택 가능)</span>
                             <span class="required">*</span>
                         </label>
-                        <div class="file-upload-wrapper" id="replaceFileWrapper">
+                        <div class="file-upload-wrapper" id="combinedFilesWrapper">
                             <input 
                                 type="file" 
-                                id="replace_file" 
-                                name="replace_file" 
+                                id="combined_files" 
+                                name="combined_files" 
                                 accept=".srt" 
                                 multiple
                                 class="file-input" 
                                 required
                             >
-                            <label for="replace_file" class="file-upload-label">
+                            <label for="combined_files" class="file-upload-label">
                                 <span class="file-icon">📁</span>
-                                <span id="replace-file-name">파일을 선택하거나 드래그하세요 (여러 개 가능)</span>
+                                <span id="combined-file-names">언어별 SRT 파일 선택 (영어, 태국어, 중국어, 번체, 일본어, 스페인어, 인도네시아어)</span>
                             </label>
                         </div>
+                        <small style="display: block; margin-top: 8px; color: #666; font-size: 0.9rem;">
+                            💡 단어 치환과 화자명 치환이 동시에 적용됩니다
+                        </small>
                     </div>
 
-                    <!-- 단어 수정 목록 -->
-                    <div class="form-section">
-                        <label class="form-label">
-                            <span class="label-text">✏️ 단어 수정 목록</span>
+                    <!-- ===== 단어 추가 영역 ===== -->
+                    <div class="form-section" style="background: #f8f9fa; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                        <label class="form-label" style="margin-bottom: 15px;">
+                            <span class="label-text">✏️ 단어 추가</span>
                         </label>
+                        
                         <!-- 단어 수정 관리 버튼 -->
                         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                             <button type="button" class="btn-add" onclick="addWordPair()" style="flex: 1;">
@@ -1348,45 +1319,12 @@
                         </div>
                     </div>
 
-                    <!-- 변환 버튼 -->
-                    <div class="form-section">
-                        <button type="submit" id="replaceBtn" class="btn-primary">
-                            🔄 단어 수정 시작
-                        </button>
-                    </div>
-
-                    <!-- 구분선 -->
-                    <hr style="margin: 40px 0; border: none; border-top: 2px solid #e0e0e0;">
-
-                    <!-- 화자명 변경 섹션 -->
-                    <div class="form-section">
-                        <label class="form-label">
-                            <span class="label-text">🎭 2-2. 화자명 전체 변경 (파일 전체에서 이름 치환)</span>
+                    <!-- ===== 화자 추가 영역 (전체 이름) ===== -->
+                    <div class="form-section" style="background: #f0f7ff; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                        <label class="form-label" style="margin-bottom: 15px;">
+                            <span class="label-text">🎭 화자 추가 - 전체 이름 (예: 이형준 → Hyeong-jun)</span>
                         </label>
                         
-                        <!-- 언어별 SRT 파일 업로드 -->
-                        <div style="margin-bottom: 20px;">
-                            <label for="speaker_lang_files" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">
-                                🌍 수정할 언어별 SRT 파일 (여러 개 선택 가능) <span class="required">*</span>
-                            </label>
-                            <div class="file-upload-wrapper" id="speakerLangFilesWrapper">
-                                <input 
-                                    type="file" 
-                                    id="speaker_lang_files" 
-                                    accept=".srt" 
-                                    multiple
-                                    class="file-input"
-                                >
-                                <label for="speaker_lang_files" class="file-upload-label">
-                                    <span class="file-icon">📁</span>
-                                    <span id="speaker-lang-file-names">언어별 SRT 파일 선택 (영어, 태국어, 중국어, 번체, 일본어, 스페인어, 인도네시아어)</span>
-                                </label>
-                            </div>
-                            <small style="display: block; margin-top: 8px; color: #666; font-size: 0.9rem;">
-                                💡 파일 전체에서 한국어 이름을 각 언어 이름으로 치환합니다 (화자명 + 대사 내용 모두 포함)
-                            </small>
-                        </div>
-
                         <!-- 화자 매핑 관리 버튼 -->
                         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                             <button type="button" class="btn-add" onclick="addSpeakerMapping()" style="flex: 1;">
@@ -1408,67 +1346,18 @@
                         <div id="speakerMappingList" class="word-replacement-list" style="max-height: 400px; overflow-y: auto;">
                             <!-- 초기 화자 매핑 항목 -->
                         </div>
-
-                        <!-- 화자명 변경 버튼 -->
-                        <button type="button" id="speakerChangeBtn" class="btn-primary" onclick="processSpeakerChange()">
-                            🎭 화자명 변경 시작
-                        </button>
                     </div>
 
-                    <!-- 화자명 변경 진행 상태 -->
-                    <div id="speakerProgressSection" class="progress-section" style="display: none;">
-                        <div class="progress-header">
-                            <div class="progress-info">
-                                <div class="spinner" id="speakerSpinner"></div>
-                                <div style="flex: 1;">
-                                    <p id="speakerProgressText">처리 준비 중...</p>
-                                    <p class="progress-details" id="speakerProgressDetails"></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 화자명 변경 에러 메시지 -->
-                    <div id="speakerErrorSection" class="error-section" style="display: none;">
-                        <div class="error-content">
-                            <span class="error-icon">⚠️</span>
-                            <p id="speakerErrorText"></p>
-                        </div>
-                    </div>
-
-                    <!-- 구분선 -->
-                    <hr style="margin: 40px 0; border: none; border-top: 2px solid #e0e0e0;">
-
-                    <!-- 화자명 부분 변경 (성 제외) 섹션 -->
-                    <div class="form-section">
-                        <label class="form-label">
-                            <span class="label-text">🎭 2-3. 화자명 부분 변경 (성 제외)</span>
+                    <!-- ===== 화자 부분 추가 영역 (성 제외) ===== -->
+                    <div class="form-section" style="background: #fff5f0; padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                        <label class="form-label" style="margin-bottom: 15px;">
+                            <span class="label-text">🎭 화자 부분 추가 - 성 제외 (예: 형준 → Hyeong-jun)</span>
                         </label>
+                        <small style="display: block; margin-bottom: 15px; color: #666; font-size: 0.9rem;">
+                            💡 위의 전체 이름 치환 후, 성이 빠진 이름도 추가로 치환합니다
+                        </small>
                         
-                        <!-- 언어별 SRT 파일 업로드 -->
-                        <div style="margin-bottom: 20px;">
-                            <label for="speaker_partial_lang_files" style="display: block; font-weight: 600; margin-bottom: 8px; font-size: 0.95rem;">
-                                🌍 수정할 언어별 SRT 파일 (여러 개 선택 가능) <span class="required">*</span>
-                            </label>
-                            <div class="file-upload-wrapper" id="speakerPartialLangFilesWrapper">
-                                <input 
-                                    type="file" 
-                                    id="speaker_partial_lang_files" 
-                                    accept=".srt" 
-                                    multiple
-                                    class="file-input"
-                                >
-                                <label for="speaker_partial_lang_files" class="file-upload-label">
-                                    <span class="file-icon">📁</span>
-                                    <span id="speaker-partial-lang-file-names">언어별 SRT 파일 선택 (영어, 태국어, 중국어, 번체, 일본어, 스페인어, 인도네시아어)</span>
-                                </label>
-                            </div>
-                            <small style="display: block; margin-top: 8px; color: #666; font-size: 0.9rem;">
-                                💡 파일 전체에서 한국어 이름을 각 언어 이름으로 치환합니다 (화자명 + 대사 내용 모두 포함)
-                            </small>
-                        </div>
-
-                        <!-- 화자 매핑 관리 버튼 -->
+                        <!-- 화자 부분 매핑 관리 버튼 -->
                         <div style="display: flex; gap: 10px; margin-bottom: 15px;">
                             <button type="button" class="btn-add" onclick="addSpeakerPartialMapping()" style="flex: 1;">
                                 ➕ 화자 추가
@@ -1485,58 +1374,43 @@
                             </label>
                         </div>
 
-                        <!-- 화자 매핑 리스트 -->
+                        <!-- 화자 부분 매핑 리스트 -->
                         <div id="speakerPartialMappingList" class="word-replacement-list" style="max-height: 400px; overflow-y: auto;">
-                            <!-- 초기 화자 매핑 항목 -->
+                            <!-- 초기 화자 부분 매핑 항목 -->
                         </div>
+                    </div>
 
-                        <!-- 화자명 부분 변경 버튼 -->
-                        <button type="button" id="speakerPartialChangeBtn" class="btn-primary" onclick="processSpeakerPartialChange()">
-                            🎭 화자명 부분 변경 시작
+                    <!-- 통합 실행 버튼 -->
+                    <div class="form-section">
+                        <button type="button" id="combinedProcessBtn" class="btn-primary" onclick="processCombinedChange()" style="font-size: 1.1rem; padding: 15px 30px;">
+                            🔄 단어/화자명 수정 시작
                         </button>
-                    </div>
-
-                    <!-- 화자명 부분 변경 진행 상태 -->
-                    <div id="speakerPartialProgressSection" class="progress-section" style="display: none;">
-                        <div class="progress-header">
-                            <div class="progress-info">
-                                <div class="spinner" id="speakerPartialSpinner"></div>
-                                <div style="flex: 1;">
-                                    <p id="speakerPartialProgressText">처리 준비 중...</p>
-                                    <p class="progress-details" id="speakerPartialProgressDetails"></p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- 화자명 부분 변경 에러 메시지 -->
-                    <div id="speakerPartialErrorSection" class="error-section" style="display: none;">
-                        <div class="error-content">
-                            <span class="error-icon">⚠️</span>
-                            <p id="speakerPartialErrorText"></p>
-                        </div>
+                        <small style="display: block; margin-top: 10px; color: #666; font-size: 0.85rem;">
+                            실행 순서: ① 단어 치환 → ② 화자 전체 이름 치환 → ③ 화자 부분 이름(성 제외) 치환
+                        </small>
                     </div>
 
                     <!-- 진행 상태 -->
-                    <div id="replaceProgressSection" class="progress-section" style="display: none;">
+                    <div id="combinedProgressSection" class="progress-section" style="display: none;">
                         <div class="progress-header">
                             <div class="progress-info">
-                                <div class="spinner" id="replaceSpinner"></div>
+                                <div class="spinner" id="combinedSpinner"></div>
                                 <div style="flex: 1;">
-                                    <p id="replaceProgressText">수정 준비 중...</p>
-                                    <p class="progress-details" id="replaceProgressDetails"></p>
+                                    <p id="combinedProgressText">처리 준비 중...</p>
+                                    <p class="progress-details" id="combinedProgressDetails"></p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- 에러 메시지 -->
-                    <div id="replaceErrorSection" class="error-section" style="display: none;">
+                    <div id="combinedErrorSection" class="error-section" style="display: none;">
                         <div class="error-content">
                             <span class="error-icon">⚠️</span>
-                            <p id="replaceErrorText"></p>
+                            <p id="combinedErrorText"></p>
                         </div>
                     </div>
+
                 </form>
             </div>
 
@@ -1632,21 +1506,6 @@
         // 파일 생성 기능 (탭 1)
         // ========================================
         
-        // TXT 파일 선택 이벤트
-        const txtFilesInput = document.getElementById('txt_files');
-        const txtFileNames = document.getElementById('txt-file-names');
-        
-        txtFilesInput.addEventListener('change', function() {
-            const count = this.files.length;
-            if (count > 0) {
-                const names = Array.from(this.files).map(f => f.name).join(', ');
-                txtFileNames.textContent = 
-                    `${count}개 파일 선택됨: ${names.substring(0, 60)}${names.length > 60 ? '...' : ''}`;
-            } else {
-                txtFileNames.textContent = 'TXT 파일 선택 (여러 개 가능)';
-            }
-        });
-
         // SRT 복제 파일 선택 이벤트
         const cloneSrtInput = document.getElementById('clone_srt_file');
         const cloneSrtFileName = document.getElementById('clone-srt-file-name');
@@ -1656,39 +1515,6 @@
                 cloneSrtFileName.textContent = this.files[0].name;
             } else {
                 cloneSrtFileName.textContent = '한국어.srt 파일 선택';
-            }
-        });
-
-        // TXT 파일 드래그 앤 드롭
-        const txtFilesWrapper = document.getElementById('txtFilesWrapper');
-        
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            txtFilesWrapper.addEventListener(eventName, e => {
-                e.preventDefault();
-                e.stopPropagation();
-            });
-        });
-        
-        ['dragenter', 'dragover'].forEach(eventName => {
-            txtFilesWrapper.addEventListener(eventName, () => {
-                txtFilesWrapper.classList.add('drag-over');
-            });
-        });
-        
-        ['dragleave', 'drop'].forEach(eventName => {
-            txtFilesWrapper.addEventListener(eventName, () => {
-                txtFilesWrapper.classList.remove('drag-over');
-            });
-        });
-        
-        txtFilesWrapper.addEventListener('drop', function(e) {
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                txtFilesInput.files = files;
-                const count = files.length;
-                const names = Array.from(files).map(f => f.name).join(', ');
-                txtFileNames.textContent = 
-                    `${count}개 파일 선택됨: ${names.substring(0, 60)}${names.length > 60 ? '...' : ''}`;
             }
         });
 
@@ -1722,106 +1548,6 @@
             }
         });
 
-        // TXT → SRT 변환 (단순 확장자 변경)
-        document.getElementById('convertTxtBtn').addEventListener('click', async function() {
-            const files = txtFilesInput.files;
-            
-            if (files.length === 0) {
-                alert('TXT 파일을 선택해주세요.');
-                return;
-            }
-            
-            const btn = this;
-            const progressSection = document.getElementById('fileGenerateProgressSection');
-            const errorSection = document.getElementById('fileGenerateErrorSection');
-            const spinner = document.getElementById('fileGenerateSpinner');
-            
-            btn.disabled = true;
-            progressSection.style.display = 'block';
-            errorSection.style.display = 'none';
-            spinner.classList.add('active');
-            
-            try {
-                // 파일이 1개인 경우
-                if (files.length === 1) {
-                    const file = files[0];
-                    document.getElementById('fileGenerateProgressText').textContent = 
-                        `변환 중: ${file.name}`;
-                    
-                    const txtContent = await file.text();
-                    const srtFileName = file.name.replace(/\.txt$/i, '.srt');
-                    
-                    // 단일 파일 다운로드
-                    const blob = new Blob([txtContent], { type: 'text/plain;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = srtFileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    
-                    progressSection.style.display = 'none';
-                    spinner.classList.remove('active');
-                    alert(`✅ TXT → SRT 변환 완료!\n\n파일: ${srtFileName}`);
-                    
-                } else {
-                    // 파일이 2개 이상인 경우 ZIP으로
-                    const zip = new JSZip();
-                    
-                    for (let i = 0; i < files.length; i++) {
-                        const file = files[i];
-                        
-                        document.getElementById('fileGenerateProgressText').textContent = 
-                            `변환 중: ${file.name}`;
-                        document.getElementById('fileGenerateProgressDetails').textContent = 
-                            `${i + 1} / ${files.length} 파일`;
-                        
-                        try {
-                            const txtContent = await file.text();
-                            const srtFileName = file.name.replace(/\.txt$/i, '.srt');
-                            zip.file(srtFileName, txtContent);
-                            
-                        } catch (error) {
-                            console.error(`파일 변환 실패: ${file.name}`, error);
-                            throw new Error(`${file.name} 변환 실패: ${error.message}`);
-                        }
-                    }
-                    
-                    // ZIP 다운로드
-                    document.getElementById('fileGenerateProgressText').textContent = 'ZIP 파일 생성 중...';
-                    const zipBlob = await zip.generateAsync({ 
-                        type: 'blob',
-                        compression: 'DEFLATE',
-                        compressionOptions: { level: 9 }
-                    });
-                    
-                    const url = URL.createObjectURL(zipBlob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'txt_to_srt_converted.zip';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    
-                    progressSection.style.display = 'none';
-                    spinner.classList.remove('active');
-                    alert(`✅ TXT → SRT 변환 완료!\n\n${files.length}개 파일이 변환되어 다운로드되었습니다.`);
-                }
-                
-            } catch (error) {
-                console.error('Error:', error);
-                progressSection.style.display = 'none';
-                spinner.classList.remove('active');
-                errorSection.style.display = 'block';
-                document.getElementById('fileGenerateErrorText').textContent = error.message;
-            } finally {
-                btn.disabled = false;
-            }
-        });
-
         // SRT 복제
         document.getElementById('cloneSrtBtn').addEventListener('click', async function() {
             const file = cloneSrtInput.files[0];
@@ -1846,7 +1572,7 @@
                 const srtContent = await file.text();
                 
                 // 복제할 언어 목록
-                const languages = ['영어', '일본어', '중국어', '번체', '인도네시아어', '스페인어', '태국어'];
+                const languages = ['영어', '일본어', '중국어', '인도네시아어', '스페인어', '태국어'];
                 
                 const zip = new JSZip();
                 
@@ -3522,70 +3248,69 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
             input.value = '';
         }
 
-        // 단어 수정 파일 선택 이벤트
-        const replaceFileInput = document.getElementById('replace_file');
-        const replaceFileName = document.getElementById('replace-file-name');
+        // 통합 파일 선택 이벤트
+        const combinedFilesInput = document.getElementById('combined_files');
+        const combinedFileNames = document.getElementById('combined-file-names');
         
-        replaceFileInput.addEventListener('change', function() {
+        combinedFilesInput.addEventListener('change', function() {
             const count = this.files.length;
             if (count > 0) {
                 const names = Array.from(this.files).map(f => f.name).join(', ');
-                replaceFileName.textContent = 
+                combinedFileNames.textContent = 
                     `${count}개 파일 선택됨: ${names.substring(0, 60)}${names.length > 60 ? '...' : ''}`;
             } else {
-                replaceFileName.textContent = '파일을 선택하거나 드래그하세요 (여러 개 가능)';
+                combinedFileNames.textContent = '언어별 SRT 파일 선택 (영어, 태국어, 중국어, 번체, 일본어, 스페인어, 인도네시아어)';
             }
         });
 
-        // 단어 수정 파일 드래그 앤 드롭
-        const replaceFileWrapper = document.getElementById('replaceFileWrapper');
+        // 통합 파일 드래그 앤 드롭
+        const combinedFilesWrapper = document.getElementById('combinedFilesWrapper');
         
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            replaceFileWrapper.addEventListener(eventName, e => {
+            combinedFilesWrapper.addEventListener(eventName, e => {
                 e.preventDefault();
                 e.stopPropagation();
             });
         });
         
         ['dragenter', 'dragover'].forEach(eventName => {
-            replaceFileWrapper.addEventListener(eventName, () => {
-                replaceFileWrapper.classList.add('drag-over');
+            combinedFilesWrapper.addEventListener(eventName, () => {
+                combinedFilesWrapper.classList.add('drag-over');
             });
         });
         
         ['dragleave', 'drop'].forEach(eventName => {
-            replaceFileWrapper.addEventListener(eventName, () => {
-                replaceFileWrapper.classList.remove('drag-over');
+            combinedFilesWrapper.addEventListener(eventName, () => {
+                combinedFilesWrapper.classList.remove('drag-over');
             });
         });
         
-        replaceFileWrapper.addEventListener('drop', function(e) {
+        combinedFilesWrapper.addEventListener('drop', function(e) {
             const files = e.dataTransfer.files;
             if (files.length > 0) {
-                replaceFileInput.files = files;
+                combinedFilesInput.files = files;
                 const names = Array.from(files).map(f => f.name).join(', ');
-                replaceFileName.textContent = 
+                combinedFileNames.textContent = 
                     `${files.length}개 파일 선택됨: ${names.substring(0, 60)}${names.length > 60 ? '...' : ''}`;
             }
         });
 
         /**
-         * 단어 수정 폼 제출
+         * 통합 단어/화자명 수정 처리
          */
-        document.getElementById('replaceForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const files = replaceFileInput.files;
+        async function processCombinedChange() {
+            const files = combinedFilesInput.files;
+            
             if (files.length === 0) {
-                alert('파일을 선택해주세요.');
+                alert('수정할 SRT 파일을 선택해주세요.');
                 return;
             }
-
+            
             // 단어 쌍 수집
             const wordPairs = [];
-            const items = document.querySelectorAll('#wordReplacementList .word-replacement-item');
+            const wordItems = document.querySelectorAll('#wordReplacementList .word-replacement-item');
             
-            for (const item of items) {
+            for (const item of wordItems) {
                 const fromWord = item.querySelector('.from-word').value.trim();
                 const toWord = item.querySelector('.to-word').value.trim();
                 
@@ -3593,142 +3318,225 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                     wordPairs.push({ from: fromWord, to: toWord });
                 }
             }
-
-            if (wordPairs.length === 0) {
-                alert('최소 하나의 단어 쌍을 입력해주세요.');
+            
+            // 화자 전체 이름 매핑 수집
+            const speakerMap = {};
+            const speakerItems = document.querySelectorAll('#speakerMappingList .speaker-mapping-item');
+            
+            speakerItems.forEach(item => {
+                const kr = item.querySelector('.speaker-kr-input').value.trim();
+                if (kr) {
+                    speakerMap[kr] = {};
+                    item.querySelectorAll('.speaker-lang-input').forEach(input => {
+                        const lang = input.getAttribute('data-lang');
+                        const value = input.value.trim();
+                        if (value) {
+                            speakerMap[kr][lang] = value;
+                        }
+                    });
+                }
+            });
+            
+            // 화자 부분 이름 매핑 수집 (성 제외)
+            const speakerPartialMap = {};
+            const speakerPartialItems = document.querySelectorAll('#speakerPartialMappingList .speaker-mapping-item');
+            
+            speakerPartialItems.forEach(item => {
+                const kr = item.querySelector('.speaker-kr-input').value.trim();
+                if (kr) {
+                    speakerPartialMap[kr] = {};
+                    item.querySelectorAll('.speaker-lang-input').forEach(input => {
+                        const lang = input.getAttribute('data-lang');
+                        const value = input.value.trim();
+                        if (value) {
+                            speakerPartialMap[kr][lang] = value;
+                        }
+                    });
+                }
+            });
+            
+            // 최소 하나는 있어야 함
+            if (wordPairs.length === 0 && Object.keys(speakerMap).length === 0 && Object.keys(speakerPartialMap).length === 0) {
+                alert('최소 하나의 단어 쌍 또는 화자 매핑을 입력해주세요.');
                 return;
             }
-
-            const replaceBtn = document.getElementById('replaceBtn');
-            const progressSection = document.getElementById('replaceProgressSection');
-            const errorSection = document.getElementById('replaceErrorSection');
-            const spinner = document.getElementById('replaceSpinner');
-
-            replaceBtn.disabled = true;
+            
+            const btn = document.getElementById('combinedProcessBtn');
+            const progressSection = document.getElementById('combinedProgressSection');
+            const errorSection = document.getElementById('combinedErrorSection');
+            const spinner = document.getElementById('combinedSpinner');
+            
+            btn.disabled = true;
             progressSection.style.display = 'block';
             errorSection.style.display = 'none';
             spinner.classList.add('active');
-
+            
             try {
+                const logLines = [];
+                logLines.push('🔍 단어/화자명 수정 로그');
+                logLines.push('='.repeat(50));
+                logLines.push('');
+                
                 // 파일이 1개인 경우
                 if (files.length === 1) {
                     const file = files[0];
+                    const rawLang = file.name.replace('.srt', '');
+                    const langCode = LANGUAGE_CODES[rawLang] || rawLang;
                     
-                    document.getElementById('replaceProgressText').textContent = 
-                        `파일 읽는 중: ${file.name}`;
-
-                    // 파일 읽기
-                    const fileContent = await file.text();
-                    let modifiedContent = fileContent;
-
-                    // 각 단어 쌍에 대해 치환 수행
-                    let totalReplacements = 0;
-                    const replacementDetails = [];
-
-                    for (let i = 0; i < wordPairs.length; i++) {
-                        const { from, to } = wordPairs[i];
-                        
-                        document.getElementById('replaceProgressText').textContent = 
-                            `단어 수정 중: "${from}" → "${to}"`;
-                        document.getElementById('replaceProgressDetails').textContent = 
-                            `${i + 1} / ${wordPairs.length} 단어`;
-
-                        // 전역 치환 (대소문자 구분)
+                    document.getElementById('combinedProgressText').textContent = 
+                        `처리 중: ${file.name}`;
+                    
+                    let content = await file.text();
+                    let totalWordReplacements = 0;
+                    let totalSpeakerReplacements = 0;
+                    let totalSpeakerPartialReplacements = 0;
+                    
+                    // 1. 단어 치환
+                    for (const { from, to } of wordPairs) {
                         const regex = new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                        const matches = modifiedContent.match(regex);
+                        const matches = content.match(regex);
                         const count = matches ? matches.length : 0;
                         
-                        modifiedContent = modifiedContent.replace(regex, to);
-                        
-                        totalReplacements += count;
                         if (count > 0) {
-                            replacementDetails.push(`"${from}" → "${to}": ${count}회`);
+                            content = content.replace(regex, to);
+                            totalWordReplacements += count;
+                            logLines.push(`  ✏️ [단어] "${from}" → "${to}": ${count}회 치환`);
                         }
-
-                        // 잠시 대기 (UI 업데이트용)
-                        await new Promise(resolve => setTimeout(resolve, 50));
                     }
-
-                    // 결과 다운로드
-                    document.getElementById('replaceProgressText').textContent = '파일 생성 중...';
                     
-                    const blob = new Blob([modifiedContent], { type: 'text/plain;charset=utf-8' });
+                    // 2. 화자 전체 이름 치환
+                    for (const [krName, langMap] of Object.entries(speakerMap)) {
+                        if (langMap[langCode]) {
+                            const targetName = langMap[langCode];
+                            const regex = new RegExp(krName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                            const matches = content.match(regex);
+                            const count = matches ? matches.length : 0;
+                            
+                            if (count > 0) {
+                                content = content.replace(regex, targetName);
+                                totalSpeakerReplacements += count;
+                                logLines.push(`  🎭 [전체] "${krName}" → "${targetName}": ${count}회 치환`);
+                            }
+                        }
+                    }
+                    
+                    // 3. 화자 부분 이름 치환 (성 제외)
+                    for (const [krName, langMap] of Object.entries(speakerPartialMap)) {
+                        if (langMap[langCode]) {
+                            const targetName = langMap[langCode];
+                            const regex = new RegExp(krName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                            const matches = content.match(regex);
+                            const count = matches ? matches.length : 0;
+                            
+                            if (count > 0) {
+                                content = content.replace(regex, targetName);
+                                totalSpeakerPartialReplacements += count;
+                                logLines.push(`  🎭 [부분] "${krName}" → "${targetName}": ${count}회 치환`);
+                            }
+                        }
+                    }
+                    
+                    // 단일 파일 다운로드
+                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
                     const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
                     a.href = url;
                     a.download = file.name;
-                    
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-
+                    
                     progressSection.style.display = 'none';
                     spinner.classList.remove('active');
-
-                    let message = `✅ 단어 수정 완료!\n\n파일: ${file.name}\n총 ${totalReplacements}회 치환되었습니다.`;
-                    if (replacementDetails.length > 0) {
-                        message += '\n\n상세 내역:\n' + replacementDetails.join('\n');
-                    }
+                    
+                    let message = `✅ 수정 완료!\n\n파일: ${file.name}\n단어 치환: ${totalWordReplacements}회\n화자 전체 치환: ${totalSpeakerReplacements}회\n화자 부분 치환: ${totalSpeakerPartialReplacements}회`;
                     alert(message);
                     
                 } else {
                     // 파일이 2개 이상인 경우 ZIP으로
                     const zip = new JSZip();
-                    const allReplacementDetails = [];
-
-                    for (let fileIdx = 0; fileIdx < files.length; fileIdx++) {
-                        const file = files[fileIdx];
+                    
+                    for (let i = 0; i < files.length; i++) {
+                        const file = files[i];
+                        const rawLang = file.name.replace('.srt', '');
+                        const langCode = LANGUAGE_CODES[rawLang] || rawLang;
                         
-                        document.getElementById('replaceProgressText').textContent = 
+                        document.getElementById('combinedProgressText').textContent = 
                             `처리 중: ${file.name}`;
-                        document.getElementById('replaceProgressDetails').textContent = 
-                            `${fileIdx + 1} / ${files.length} 파일`;
-
+                        document.getElementById('combinedProgressDetails').textContent = 
+                            `${i + 1} / ${files.length} 파일`;
+                        
+                        logLines.push(`📄 [${rawLang}] 처리 시작`);
+                        
                         try {
-                            const fileContent = await file.text();
-                            let modifiedContent = fileContent;
-                            let totalReplacements = 0;
-                            const fileReplacementDetails = [];
-
-                            // 각 단어 쌍에 대해 치환 수행
-                            for (let i = 0; i < wordPairs.length; i++) {
-                                const { from, to } = wordPairs[i];
-
-                                // 전역 치환 (대소문자 구분)
+                            let content = await file.text();
+                            let totalWordReplacements = 0;
+                            let totalSpeakerReplacements = 0;
+                            let totalSpeakerPartialReplacements = 0;
+                            
+                            // 1. 단어 치환
+                            for (const { from, to } of wordPairs) {
                                 const regex = new RegExp(from.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                                const matches = modifiedContent.match(regex);
+                                const matches = content.match(regex);
                                 const count = matches ? matches.length : 0;
                                 
-                                modifiedContent = modifiedContent.replace(regex, to);
-                                
-                                totalReplacements += count;
                                 if (count > 0) {
-                                    fileReplacementDetails.push(`  "${from}" → "${to}": ${count}회`);
+                                    content = content.replace(regex, to);
+                                    totalWordReplacements += count;
+                                    logLines.push(`  ✏️ [단어] "${from}" → "${to}": ${count}회 치환`);
                                 }
                             }
-
-                            zip.file(file.name, modifiedContent);
                             
-                            allReplacementDetails.push(`📄 ${file.name}: 총 ${totalReplacements}회 치환`);
-                            if (fileReplacementDetails.length > 0) {
-                                allReplacementDetails.push(...fileReplacementDetails);
+                            // 2. 화자 전체 이름 치환
+                            for (const [krName, langMap] of Object.entries(speakerMap)) {
+                                if (langMap[langCode]) {
+                                    const targetName = langMap[langCode];
+                                    const regex = new RegExp(krName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                                    const matches = content.match(regex);
+                                    const count = matches ? matches.length : 0;
+                                    
+                                    if (count > 0) {
+                                        content = content.replace(regex, targetName);
+                                        totalSpeakerReplacements += count;
+                                        logLines.push(`  🎭 [전체] "${krName}" → "${targetName}": ${count}회 치환`);
+                                    }
+                                }
                             }
-                            allReplacementDetails.push('');
+                            
+                            // 3. 화자 부분 이름 치환 (성 제외)
+                            for (const [krName, langMap] of Object.entries(speakerPartialMap)) {
+                                if (langMap[langCode]) {
+                                    const targetName = langMap[langCode];
+                                    const regex = new RegExp(krName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+                                    const matches = content.match(regex);
+                                    const count = matches ? matches.length : 0;
+                                    
+                                    if (count > 0) {
+                                        content = content.replace(regex, targetName);
+                                        totalSpeakerPartialReplacements += count;
+                                        logLines.push(`  🎭 [부분] "${krName}" → "${targetName}": ${count}회 치환`);
+                                    }
+                                }
+                            }
+                            
+                            zip.file(file.name, content);
+                            logLines.push(`✅ 저장 완료 → ${file.name} (단어: ${totalWordReplacements}회, 전체: ${totalSpeakerReplacements}회, 부분: ${totalSpeakerPartialReplacements}회)`);
                             
                         } catch (error) {
+                            logLines.push(`⚠️ ${file.name} 처리 실패: ${error.message}`);
                             console.error(`파일 처리 실패: ${file.name}`, error);
-                            allReplacementDetails.push(`⚠️ ${file.name}: 처리 실패 - ${error.message}`);
-                            allReplacementDetails.push('');
                         }
+                        
+                        logLines.push('-'.repeat(40));
+                        logLines.push('');
                     }
-
+                    
                     // 로그 파일 추가
-                    const logContent = '📝 단어 수정 로그\n' + '='.repeat(50) + '\n\n' + allReplacementDetails.join('\n');
-                    zip.file('단어_수정_로그.txt', logContent);
-
+                    zip.file('수정_로그.txt', logLines.join('\n'));
+                    
                     // ZIP 다운로드
-                    document.getElementById('replaceProgressText').textContent = 'ZIP 파일 생성 중...';
+                    document.getElementById('combinedProgressText').textContent = 'ZIP 파일 생성 중...';
                     const zipBlob = await zip.generateAsync({ 
                         type: 'blob',
                         compression: 'DEFLATE',
@@ -3738,27 +3546,27 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                     const url = URL.createObjectURL(zipBlob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = '🎭 2-3. 화자명 부분 변경 (성 제외).zip';
+                    a.download = '✏️ 2-1. 단어_화자명 수정.zip';
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
-
+                    
                     progressSection.style.display = 'none';
                     spinner.classList.remove('active');
-                    alert(`✅ 단어 수정 완료!\n\n${files.length}개 파일이 처리되어 다운로드되었습니다.`);
+                    alert(`✅ 단어/화자명 수정 완료!\n\n${files.length}개 파일이 처리되어 다운로드되었습니다.`);
                 }
-
+                
             } catch (error) {
                 console.error('Error:', error);
                 progressSection.style.display = 'none';
                 spinner.classList.remove('active');
                 errorSection.style.display = 'block';
-                document.getElementById('replaceErrorText').textContent = error.message;
+                document.getElementById('combinedErrorText').textContent = error.message;
             } finally {
-                replaceBtn.disabled = false;
+                btn.disabled = false;
             }
-        });
+        }
 
         // ========================================
         // 화자명 변경 기능
@@ -3939,247 +3747,8 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
             input.value = '';
         }
 
-        // 파일 선택 이벤트
-        const speakerLangFilesInput = document.getElementById('speaker_lang_files');
-        const speakerLangFileNames = document.getElementById('speaker-lang-file-names');
-        
-        speakerLangFilesInput.addEventListener('change', function() {
-            const count = this.files.length;
-            if (count > 0) {
-                const names = Array.from(this.files).map(f => f.name).join(', ');
-                speakerLangFileNames.textContent = 
-                    `${count}개 파일 선택됨: ${names.substring(0, 60)}${names.length > 60 ? '...' : ''}`;
-            } else {
-                speakerLangFileNames.textContent = 
-                    '언어별 SRT 파일 선택 (영어, 태국어, 중국어, 번체, 일본어, 스페인어, 인도네시아어)';
-            }
-        });
-
-        // 화자 파일 드래그 앤 드롭
-        const speakerLangFilesWrapper = document.getElementById('speakerLangFilesWrapper');
-        
-        if (speakerLangFilesWrapper) {
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                speakerLangFilesWrapper.addEventListener(eventName, e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                });
-            });
-            
-            ['dragenter', 'dragover'].forEach(eventName => {
-                speakerLangFilesWrapper.addEventListener(eventName, () => {
-                    speakerLangFilesWrapper.classList.add('drag-over');
-                });
-            });
-            
-            ['dragleave', 'drop'].forEach(eventName => {
-                speakerLangFilesWrapper.addEventListener(eventName, () => {
-                    speakerLangFilesWrapper.classList.remove('drag-over');
-                });
-            });
-            
-            speakerLangFilesWrapper.addEventListener('drop', function(e) {
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    speakerLangFilesInput.files = files;
-                    const names = Array.from(files).map(f => f.name).join(', ');
-                    speakerLangFileNames.textContent = 
-                        `${files.length}개 파일 선택됨: ${names.substring(0, 60)}${names.length > 60 ? '...' : ''}`;
-                }
-            });
-        }
-
-        // 화자명 변경 처리 (전체 치환 방식)
-        async function processSpeakerChange() {
-            const langFiles = document.getElementById('speaker_lang_files').files;
-            
-            if (langFiles.length === 0) {
-                alert('수정할 언어별 SRT 파일을 선택해주세요.');
-                return;
-            }
-            
-            // 화자 매핑 수집 (2-2 전용 리스트에서만)
-            const speakerMap = {};
-            const items = document.querySelectorAll('#speakerMappingList .speaker-mapping-item');
-            
-            if (items.length === 0) {
-                alert('최소 하나의 화자 매핑을 추가해주세요.');
-                return;
-            }
-            
-            items.forEach(item => {
-                const kr = item.querySelector('.speaker-kr-input').value.trim();
-                if (kr) {
-                    speakerMap[kr] = {};
-                    item.querySelectorAll('.speaker-lang-input').forEach(input => {
-                        const lang = input.getAttribute('data-lang');
-                        const value = input.value.trim();
-                        if (value) {
-                            speakerMap[kr][lang] = value;
-                        }
-                    });
-                }
-            });
-            
-            const btn = document.getElementById('speakerChangeBtn');
-            const progressSection = document.getElementById('speakerProgressSection');
-            const errorSection = document.getElementById('speakerErrorSection');
-            const spinner = document.getElementById('speakerSpinner');
-            
-            btn.disabled = true;
-            progressSection.style.display = 'block';
-            errorSection.style.display = 'none';
-            spinner.classList.add('active');
-            
-            try {
-                const logLines = [];
-                logLines.push('🔍 화자 이름 전체 치환 로그');
-                logLines.push('='.repeat(50));
-                logLines.push('');
-                
-                // 파일이 1개인 경우
-                if (langFiles.length === 1) {
-                    const file = langFiles[0];
-                    const rawLang = file.name.replace('.srt', '');
-                    const langCode = LANGUAGE_CODES[rawLang] || rawLang;
-                    
-                    document.getElementById('speakerProgressText').textContent = 
-                        `처리 중: ${file.name}`;
-                    
-                    logLines.push(`🌍 [${rawLang}] 처리 시작`);
-                    
-                    let content = await file.text();
-                    let totalReplacements = 0;
-                    
-                    // 각 한국어 이름을 해당 언어 이름으로 전체 치환
-                    for (const [krName, langMap] of Object.entries(speakerMap)) {
-                        if (langMap[langCode]) {
-                            const targetName = langMap[langCode];
-                            
-                            // 전역 치환 (대소문자 구분)
-                            const regex = new RegExp(krName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                            const matches = content.match(regex);
-                            const count = matches ? matches.length : 0;
-                            
-                            if (count > 0) {
-                                content = content.replace(regex, targetName);
-                                totalReplacements += count;
-                                logLines.push(`  ✏️ "${krName}" → "${targetName}": ${count}회 치환`);
-                            }
-                        }
-                    }
-                    
-                    logLines.push(`✅ 저장 완료 → ${file.name} (총 ${totalReplacements}회 치환)`);
-                    
-                    // 단일 파일 다운로드
-                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = file.name;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    
-                    progressSection.style.display = 'none';
-                    spinner.classList.remove('active');
-                    
-                    let message = `✅ 화자명 전체 치환 완료!\n\n파일: ${file.name}\n총 ${totalReplacements}회 치환`;
-                    if (logLines.length > 3) {
-                        message += '\n\n상세 내역:\n' + logLines.slice(3).join('\n');
-                    }
-                    alert(message);
-                    
-                } else {
-                    // 파일이 2개 이상인 경우 ZIP으로
-                    const zip = new JSZip();
-                    
-                    // 각 언어별 파일 처리
-                    for (let i = 0; i < langFiles.length; i++) {
-                        const file = langFiles[i];
-                        const rawLang = file.name.replace('.srt', '');
-                        const langCode = LANGUAGE_CODES[rawLang] || rawLang;
-                        
-                        document.getElementById('speakerProgressText').textContent = 
-                            `처리 중: ${file.name}`;
-                        document.getElementById('speakerProgressDetails').textContent = 
-                            `${i + 1} / ${langFiles.length} 파일`;
-                        
-                        logLines.push(`🌍 [${rawLang}] 처리 시작`);
-                        
-                        try {
-                            let content = await file.text();
-                            let totalReplacements = 0;
-                            
-                            // 각 한국어 이름을 해당 언어 이름으로 전체 치환
-                            for (const [krName, langMap] of Object.entries(speakerMap)) {
-                                if (langMap[langCode]) {
-                                    const targetName = langMap[langCode];
-                                    
-                                    // 전역 치환 (대소문자 구분)
-                                    const regex = new RegExp(krName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                                    const matches = content.match(regex);
-                                    const count = matches ? matches.length : 0;
-                                    
-                                    if (count > 0) {
-                                        content = content.replace(regex, targetName);
-                                        totalReplacements += count;
-                                        logLines.push(`  ✏️ "${krName}" → "${targetName}": ${count}회 치환`);
-                                    }
-                                }
-                            }
-                            
-                            zip.file(file.name, content);
-                            logLines.push(`✅ 저장 완료 → ${file.name} (총 ${totalReplacements}회 치환)`);
-                            
-                        } catch (error) {
-                            logLines.push(`⚠️ ${file.name} 처리 실패: ${error.message}`);
-                            console.error(`파일 처리 실패: ${file.name}`, error);
-                        }
-                        
-                        logLines.push('-'.repeat(40));
-                        logLines.push('');
-                    }
-                    
-                    // 로그 파일 추가
-                    zip.file('화자_이름_치환_로그.txt', logLines.join('\n'));
-                    
-                    // ZIP 다운로드
-                    document.getElementById('speakerProgressText').textContent = 'ZIP 파일 생성 중...';
-                    const zipBlob = await zip.generateAsync({ 
-                        type: 'blob',
-                        compression: 'DEFLATE',
-                        compressionOptions: { level: 9 }
-                    });
-                    
-                    const url = URL.createObjectURL(zipBlob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = '3-1 화자명 변경된 번역.zip';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    
-                    progressSection.style.display = 'none';
-                    spinner.classList.remove('active');
-                    alert(`✅ 화자명 전체 치환 완료!\n\n${langFiles.length}개 파일이 처리되어 다운로드되었습니다.`);
-                }
-                
-            } catch (error) {
-                console.error('Error:', error);
-                progressSection.style.display = 'none';
-                spinner.classList.remove('active');
-                errorSection.style.display = 'block';
-                document.getElementById('speakerErrorText').textContent = error.message;
-            } finally {
-                btn.disabled = false;
-            }
-        }
-
         // ========================================
-        // 화자명 부분 변경 기능 (2-3)
+        // 화자명 부분 변경 기능 (2-2)
         // ========================================
         
         const SPEAKER_PARTIAL_STORAGE_KEY = 'srt_speaker_partial_mappings';
@@ -4346,245 +3915,6 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
             };
             reader.readAsText(file);
             input.value = '';
-        }
-
-        // 파일 선택 이벤트
-        const speakerPartialLangFilesInput = document.getElementById('speaker_partial_lang_files');
-        const speakerPartialLangFileNames = document.getElementById('speaker-partial-lang-file-names');
-        
-        speakerPartialLangFilesInput.addEventListener('change', function() {
-            const count = this.files.length;
-            if (count > 0) {
-                const names = Array.from(this.files).map(f => f.name).join(', ');
-                speakerPartialLangFileNames.textContent = 
-                    `${count}개 파일 선택됨: ${names.substring(0, 60)}${names.length > 60 ? '...' : ''}`;
-            } else {
-                speakerPartialLangFileNames.textContent = 
-                    '언어별 SRT 파일 선택 (영어, 태국어, 중국어, 번체, 일본어, 스페인어, 인도네시아어)';
-            }
-        });
-
-        // 화자 부분 파일 드래그 앤 드롭
-        const speakerPartialLangFilesWrapper = document.getElementById('speakerPartialLangFilesWrapper');
-        
-        if (speakerPartialLangFilesWrapper) {
-            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-                speakerPartialLangFilesWrapper.addEventListener(eventName, e => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                });
-            });
-            
-            ['dragenter', 'dragover'].forEach(eventName => {
-                speakerPartialLangFilesWrapper.addEventListener(eventName, () => {
-                    speakerPartialLangFilesWrapper.classList.add('drag-over');
-                });
-            });
-            
-            ['dragleave', 'drop'].forEach(eventName => {
-                speakerPartialLangFilesWrapper.addEventListener(eventName, () => {
-                    speakerPartialLangFilesWrapper.classList.remove('drag-over');
-                });
-            });
-            
-            speakerPartialLangFilesWrapper.addEventListener('drop', function(e) {
-                const files = e.dataTransfer.files;
-                if (files.length > 0) {
-                    speakerPartialLangFilesInput.files = files;
-                    const names = Array.from(files).map(f => f.name).join(', ');
-                    speakerPartialLangFileNames.textContent = 
-                        `${files.length}개 파일 선택됨: ${names.substring(0, 60)}${names.length > 60 ? '...' : ''}`;
-                }
-            });
-        }
-
-        // 화자명 부분 변경 처리 (전체 치환 방식)
-        async function processSpeakerPartialChange() {
-            const langFiles = document.getElementById('speaker_partial_lang_files').files;
-            
-            if (langFiles.length === 0) {
-                alert('수정할 언어별 SRT 파일을 선택해주세요.');
-                return;
-            }
-            
-            // 화자 매핑 수집
-            const speakerMap = {};
-            const items = document.querySelectorAll('#speakerPartialMappingList .speaker-mapping-item');
-            
-            if (items.length === 0) {
-                alert('최소 하나의 화자 매핑을 추가해주세요.');
-                return;
-            }
-            
-            items.forEach(item => {
-                const kr = item.querySelector('.speaker-kr-input').value.trim();
-                if (kr) {
-                    speakerMap[kr] = {};
-                    item.querySelectorAll('.speaker-lang-input').forEach(input => {
-                        const lang = input.getAttribute('data-lang');
-                        const value = input.value.trim();
-                        if (value) {
-                            speakerMap[kr][lang] = value;
-                        }
-                    });
-                }
-            });
-            
-            const btn = document.getElementById('speakerPartialChangeBtn');
-            const progressSection = document.getElementById('speakerPartialProgressSection');
-            const errorSection = document.getElementById('speakerPartialErrorSection');
-            const spinner = document.getElementById('speakerPartialSpinner');
-            
-            btn.disabled = true;
-            progressSection.style.display = 'block';
-            errorSection.style.display = 'none';
-            spinner.classList.add('active');
-            
-            try {
-                const logLines = [];
-                logLines.push('🔍 화자 이름 부분 치환 로그 (성 제외)');
-                logLines.push('='.repeat(50));
-                logLines.push('');
-                
-                // 파일이 1개인 경우
-                if (langFiles.length === 1) {
-                    const file = langFiles[0];
-                    const rawLang = file.name.replace('.srt', '');
-                    const langCode = LANGUAGE_CODES[rawLang] || rawLang;
-                    
-                    document.getElementById('speakerPartialProgressText').textContent = 
-                        `처리 중: ${file.name}`;
-                    
-                    logLines.push(`🌍 [${rawLang}] 처리 시작`);
-                    
-                    let content = await file.text();
-                    let totalReplacements = 0;
-                    
-                    // 각 한국어 이름을 해당 언어 이름으로 전체 치환
-                    for (const [krName, langMap] of Object.entries(speakerMap)) {
-                        if (langMap[langCode]) {
-                            const targetName = langMap[langCode];
-                            
-                            // 전역 치환 (대소문자 구분)
-                            const regex = new RegExp(krName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                            const matches = content.match(regex);
-                            const count = matches ? matches.length : 0;
-                            
-                            if (count > 0) {
-                                content = content.replace(regex, targetName);
-                                totalReplacements += count;
-                                logLines.push(`  ✏️ "${krName}" → "${targetName}": ${count}회 치환`);
-                            }
-                        }
-                    }
-                    
-                    logLines.push(`✅ 저장 완료 → ${file.name} (총 ${totalReplacements}회 치환)`);
-                    
-                    // 단일 파일 다운로드
-                    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = file.name;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    
-                    progressSection.style.display = 'none';
-                    spinner.classList.remove('active');
-                    
-                    let message = `✅ 화자명 부분 치환 완료!\n\n파일: ${file.name}\n총 ${totalReplacements}회 치환`;
-                    if (logLines.length > 3) {
-                        message += '\n\n상세 내역:\n' + logLines.slice(3).join('\n');
-                    }
-                    alert(message);
-                    
-                } else {
-                    // 파일이 2개 이상인 경우 ZIP으로
-                    const zip = new JSZip();
-                    
-                    // 각 언어별 파일 처리
-                    for (let i = 0; i < langFiles.length; i++) {
-                        const file = langFiles[i];
-                        const rawLang = file.name.replace('.srt', '');
-                        const langCode = LANGUAGE_CODES[rawLang] || rawLang;
-                        
-                        document.getElementById('speakerPartialProgressText').textContent = 
-                            `처리 중: ${file.name}`;
-                        document.getElementById('speakerPartialProgressDetails').textContent = 
-                            `${i + 1} / ${langFiles.length} 파일`;
-                        
-                        logLines.push(`🌍 [${rawLang}] 처리 시작`);
-                        
-                        try {
-                            let content = await file.text();
-                            let totalReplacements = 0;
-                            
-                            // 각 한국어 이름을 해당 언어 이름으로 전체 치환
-                            for (const [krName, langMap] of Object.entries(speakerMap)) {
-                                if (langMap[langCode]) {
-                                    const targetName = langMap[langCode];
-                                    
-                                    // 전역 치환 (대소문자 구분)
-                                    const regex = new RegExp(krName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-                                    const matches = content.match(regex);
-                                    const count = matches ? matches.length : 0;
-                                    
-                                    if (count > 0) {
-                                        content = content.replace(regex, targetName);
-                                        totalReplacements += count;
-                                        logLines.push(`  ✏️ "${krName}" → "${targetName}": ${count}회 치환`);
-                                    }
-                                }
-                            }
-                            
-                            zip.file(file.name, content);
-                            logLines.push(`✅ 저장 완료 → ${file.name} (총 ${totalReplacements}회 치환)`);
-                            
-                        } catch (error) {
-                            logLines.push(`⚠️ ${file.name} 처리 실패: ${error.message}`);
-                            console.error(`파일 처리 실패: ${file.name}`, error);
-                        }
-                        
-                        logLines.push('-'.repeat(40));
-                        logLines.push('');
-                    }
-                    
-                    // 로그 파일 추가
-                    zip.file('화자_이름_부분_치환_로그.txt', logLines.join('\n'));
-                    
-                    // ZIP 다운로드
-                    document.getElementById('speakerPartialProgressText').textContent = 'ZIP 파일 생성 중...';
-                    const zipBlob = await zip.generateAsync({ 
-                        type: 'blob',
-                        compression: 'DEFLATE',
-                        compressionOptions: { level: 9 }
-                    });
-                    
-                    const url = URL.createObjectURL(zipBlob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = '👥 3-1. 화자명 변경된 번역.zip';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                    
-                    progressSection.style.display = 'none';
-                    spinner.classList.remove('active');
-                    alert(`✅ 화자명 부분 치환 완료!\n\n${langFiles.length}개 파일이 처리되어 다운로드되었습니다.`);
-                }
-                
-            } catch (error) {
-                console.error('Error:', error);
-                progressSection.style.display = 'none';
-                spinner.classList.remove('active');
-                errorSection.style.display = 'block';
-                document.getElementById('speakerPartialErrorText').textContent = error.message;
-            } finally {
-                btn.disabled = false;
-            }
         }
 
         // ========================================
