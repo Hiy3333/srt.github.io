@@ -853,7 +853,7 @@
                 3. 각 나라별 번역
             </button>
             <button class="tab-button" data-tab="japanese-split">
-                4. 일본어 두 줄 변환
+                4. 일본어 변환
             </button>
             <button class="tab-button" data-tab="premiere">
                 5. 프리미어 자막 변환
@@ -864,6 +864,27 @@
         <main class="main-content">
             <!-- 탭 1: 파일 생성 -->
             <div id="tab-file-generate" class="tab-content active">
+                <!-- 다운로드 경로 설정 -->
+                <div class="form-section" style="background: #f0f7ff; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
+                    <label class="form-label" style="margin-bottom: 10px;">
+                        <span class="label-text">📂 다운로드 경로 설정</span>
+                    </label>
+                    <div id="downloadPathSection" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                        <div id="downloadPathDisplay" style="flex: 1; min-width: 200px; padding: 10px 14px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; color: #666; font-size: 0.95rem;">
+                            경로가 설정되지 않았습니다 (브라우저 기본 다운로드)
+                        </div>
+                        <button type="button" id="setDownloadPathBtn" class="btn-secondary" style="padding: 10px 20px;">
+                            📁 경로 선택
+                        </button>
+                        <button type="button" id="clearDownloadPathBtn" class="btn-secondary" style="padding: 10px 20px; display: none;">
+                            ✕ 해제
+                        </button>
+                    </div>
+                    <small style="display: block; margin-top: 8px; color: #666; font-size: 0.85rem;">
+                        💡 클릭하여 폴더를 선택하면, 이 페이지의 모든 다운로드가 해당 경로에 저장됩니다. (Chrome, Edge에서만 지원)
+                    </small>
+                </div>
+
                 <!-- SRT 복제 -->
                 <div class="form-section">
                     <label class="form-label">
@@ -958,10 +979,10 @@
 
             <!-- 탭 3: 각 나라별 번역 -->
             <div id="tab-translation" class="tab-content">
-                <!-- 3-1. 화자명 변경된 번역 -->
+                <!-- 3-1. 각 나라별 번역 -->
                 <div class="form-section">
                     <label class="form-label">
-                        <span class="label-text">👥 3-1. 화자명 변경된 번역</span>
+                        <span class="label-text">👥 3-1. 각 나라별 번역</span>
                     </label>
                     
                     <div style="margin-bottom: 20px;">
@@ -1417,12 +1438,17 @@
                 </form>
             </div>
 
-            <!-- 탭 4: 일본어 두 줄 변환 -->
+            <!-- 탭 4: 일본어 변환 -->
             <div id="tab-japanese-split" class="tab-content">
                 <div class="form-section">
-                    <label class="form-label">
-                        <span class="label-text">🇯🇵 4-1. 일본어 두 줄 변환</span>
-                    </label>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <label class="form-label" style="margin-bottom: 0;">
+                            <span class="label-text">🇯🇵 4-1. 일본어 변환</span>
+                        </label>
+                        <button type="button" class="btn-secondary" onclick="clearJapaneseConvertInputs()" style="padding: 8px 16px;">
+                            🗑️ 삭제
+                        </button>
+                    </div>
                     <small style="display: block; margin-bottom: 20px; color: #666; font-size: 0.9rem;">
                         💡 일본어 문장을 한국어 번역 줄 수에 맞춰 분할합니다
                     </small>
@@ -1487,16 +1513,20 @@
                         🔄 일본어 분할 변환
                     </button>
                     
+                    <!-- 처리 중 표시 -->
+                    <div id="japaneseSplitProgress" style="display: none; margin-top: 15px; padding: 15px; background: #e3f2fd; border-radius: 8px; color: #1565c0;">
+                        <span class="spinner" style="display: inline-block; width: 20px; height: 20px; margin-right: 10px; vertical-align: middle;"></span>
+                        GPT로 일본어 분할 중...
+                    </div>
+                    
                     <!-- 결과 영역 -->
-                    <div id="japaneseSplitResult" style="display: none; margin-top: 25px; background: #e8f5e9; padding: 20px; border-radius: 12px; border: 2px solid #4caf50;">
+                    <div id="japaneseSplitResult" style="display: none; margin-top: 25px;">
                         <label style="display: block; font-weight: 600; margin-bottom: 15px; font-size: 1rem; color: #2e7d32;">
                             ✅ 변환 결과
                         </label>
-                        <div id="japaneseSplitOutput" style="font-family: 'Noto Sans JP', sans-serif;"></div>
-                        
-                        <!-- 복사 버튼 -->
+                        <div id="japaneseSplitOutput" style="display: flex; flex-direction: column; gap: 15px;"></div>
                         <button type="button" class="btn-secondary" onclick="copyJapaneseSplitResult()" style="margin-top: 15px;">
-                            📋 결과 복사
+                            📋 전체 복사
                         </button>
                     </div>
                 </div>
@@ -1573,6 +1603,143 @@
     </div>
 
     <script>
+        // ========================================
+        // 다운로드 경로 설정 (File System Access API)
+        // ========================================
+        const DOWNLOAD_PATH_DB = 'srt_download_path_db';
+        const DOWNLOAD_PATH_STORE = 'path_store';
+        const DOWNLOAD_PATH_KEY = 'directory_handle';
+        
+        let downloadDirHandle = null;
+        
+        async function openDownloadPathDB() {
+            return new Promise((resolve, reject) => {
+                const req = indexedDB.open(DOWNLOAD_PATH_DB, 1);
+                req.onerror = () => reject(req.error);
+                req.onsuccess = () => resolve(req.result);
+                req.onupgradeneeded = (e) => {
+                    e.target.result.createObjectStore(DOWNLOAD_PATH_STORE);
+                };
+            });
+        }
+        
+        async function loadDownloadPathHandle() {
+            if (!('showDirectoryPicker' in window)) return;
+            try {
+                const db = await openDownloadPathDB();
+                const tx = db.transaction(DOWNLOAD_PATH_STORE, 'readonly');
+                const store = tx.objectStore(DOWNLOAD_PATH_STORE);
+                const req = store.get(DOWNLOAD_PATH_KEY);
+                return new Promise((resolve) => {
+                    req.onsuccess = () => {
+                        const handle = req.result;
+                        if (handle && typeof handle.verifyPermission === 'function') {
+                            handle.verifyPermission({ mode: 'readwrite' }).then(granted => {
+                                resolve(granted ? handle : null);
+                            }).catch(() => resolve(null));
+                        } else {
+                            resolve(handle || null);
+                        }
+                    };
+                    req.onerror = () => resolve(null);
+                });
+            } catch (e) {
+                return null;
+            }
+        }
+        
+        async function saveDownloadPathHandle(handle) {
+            try {
+                const db = await openDownloadPathDB();
+                const tx = db.transaction(DOWNLOAD_PATH_STORE, 'readwrite');
+                const store = tx.objectStore(DOWNLOAD_PATH_STORE);
+                store.put(handle, DOWNLOAD_PATH_KEY);
+                return new Promise((resolve, reject) => {
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                });
+            } catch (e) {
+                console.error('경로 저장 실패:', e);
+            }
+        }
+        
+        async function clearDownloadPathHandle() {
+            try {
+                const db = await openDownloadPathDB();
+                const tx = db.transaction(DOWNLOAD_PATH_STORE, 'readwrite');
+                tx.objectStore(DOWNLOAD_PATH_STORE).delete(DOWNLOAD_PATH_KEY);
+            } catch (e) {}
+            downloadDirHandle = null;
+        }
+        
+        function updateDownloadPathUI() {
+            const display = document.getElementById('downloadPathDisplay');
+            const clearBtn = document.getElementById('clearDownloadPathBtn');
+            if (downloadDirHandle) {
+                display.textContent = '📁 ' + downloadDirHandle.name;
+                display.style.color = '#1565c0';
+                clearBtn.style.display = 'inline-block';
+            } else {
+                display.textContent = '경로가 설정되지 않았습니다 (브라우저 기본 다운로드)';
+                display.style.color = '#666';
+                clearBtn.style.display = 'none';
+            }
+        }
+        
+        async function setDownloadPath() {
+            if (!('showDirectoryPicker' in window)) {
+                alert('이 브라우저는 폴더 선택을 지원하지 않습니다.\nChrome 또는 Edge를 사용해주세요.');
+                return;
+            }
+            try {
+                const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
+                downloadDirHandle = handle;
+                await saveDownloadPathHandle(handle);
+                updateDownloadPathUI();
+            } catch (e) {
+                if (e.name !== 'AbortError') {
+                    console.error('경로 선택 오류:', e);
+                    alert('경로 선택에 실패했습니다: ' + (e.message || e));
+                }
+            }
+        }
+        
+        async function clearDownloadPath() {
+            await clearDownloadPathHandle();
+            updateDownloadPathUI();
+        }
+        
+        async function saveBlobToPath(blob, filename) {
+            if (downloadDirHandle) {
+                try {
+                    const fileHandle = await downloadDirHandle.getFileHandle(filename, { create: true });
+                    const writable = await fileHandle.createWritable();
+                    await writable.write(blob);
+                    await writable.close();
+                    return true;
+                } catch (e) {
+                    console.warn('경로 저장 실패, 기본 다운로드로 전환:', e);
+                }
+            }
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            return false;
+        }
+        
+        document.getElementById('setDownloadPathBtn').addEventListener('click', setDownloadPath);
+        document.getElementById('clearDownloadPathBtn').addEventListener('click', clearDownloadPath);
+        
+        window.addEventListener('DOMContentLoaded', async () => {
+            downloadDirHandle = await loadDownloadPathHandle();
+            updateDownloadPathUI();
+        });
+
         // ========================================
         // 탭 전환 기능
         // ========================================
@@ -1683,14 +1850,7 @@
                     compressionOptions: { level: 9 }
                 });
                 
-                const url = URL.createObjectURL(zipBlob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = '2-1. 단어 수정.zip';
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                URL.revokeObjectURL(url);
+                await saveBlobToPath(zipBlob, '✏️ 2-1. 단어_화자명 수정.zip');
                 
                 progressSection.style.display = 'none';
                 spinner.classList.remove('active');
@@ -2165,18 +2325,10 @@ Now translate the following text:`
         }
 
         // 개별 SRT 파일 다운로드
-        function downloadSRTFile(langCode, blocks) {
+        async function downloadSRTFile(langCode, blocks) {
             const srtContent = generateSRT(blocks);
             const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${currentFilename}_${langCode}.srt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
+            await saveBlobToPath(blob, `${currentFilename}_${langCode}.srt`);
             console.log(`다운로드 완료: ${currentFilename}_${langCode}.srt`);
         }
 
@@ -2193,15 +2345,7 @@ Now translate the following text:`
             const zipBlob = await zip.generateAsync({ type: 'blob' });
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
             const downloadFilename = `${currentFilename}_translated_${timestamp}.zip`;
-            
-            const url = URL.createObjectURL(zipBlob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = downloadFilename;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            await saveBlobToPath(zipBlob, downloadFilename);
         }
 
         // 실패 정보 표시
@@ -2326,7 +2470,7 @@ Now translate the following text:`
         });
 
         // ========================================
-        // 1. 화자명 변경된 번역
+        // 3-1. 각 나라별 번역
         // ========================================
         
         // 파일 선택 이벤트
@@ -2706,14 +2850,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                     // 개별 파일 다운로드 (원본 파일명 유지)
                     const srtContent = generateSRT(translatedBlocks);
                     const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = '번역완료/' + file.name;  // "번역완료" 폴더 안에 저장
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
+                    await saveBlobToPath(blob, file.name);
 
                     if (errorCount > 0) {
                         console.log(`${file.name}: ${errorCount}개 블록 번역 실패`);
@@ -2946,7 +3083,8 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                         if (!isCancelled) {
                             const outputFilename = `${currentFilename}_${langName.split(' ')[0]}.srt`;
                             const srtContent = generateSRT(result.translatedBlocks);
-                            downloadSRTFile(outputFilename, srtContent);
+                            const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
+                            await saveBlobToPath(blob, outputFilename);
                             
                             totalTranslationsCompleted++;
                             
@@ -3158,22 +3296,15 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
         });
 
         // 로그 다운로드 버튼
-        downloadReviewLogBtn.addEventListener('click', function() {
+        downloadReviewLogBtn.addEventListener('click', async function() {
             if (!reviewLogContent) {
                 alert('검토 결과가 없습니다.');
                 return;
             }
 
             const blob = new Blob([reviewLogContent], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-            a.download = `SRT_검토결과_${timestamp}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            await saveBlobToPath(blob, `SRT_검토결과_${timestamp}.txt`);
         });
 
         // ========================================
@@ -3280,7 +3411,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
         }
 
         // 다운로드
-        function downloadWordPairs() {
+        async function downloadWordPairs() {
             const items = document.querySelectorAll('#wordReplacementList .word-replacement-item');
             const pairs = [];
             
@@ -3298,15 +3429,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
             }
             
             const blob = new Blob([JSON.stringify(pairs, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'word_pairs.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
+            await saveBlobToPath(blob, 'word_pairs.json');
             alert('단어 쌍 파일이 다운로드되었습니다.');
         }
 
@@ -3526,14 +3649,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                     
                     // 단일 파일 다운로드
                     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = file.name;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
+                    await saveBlobToPath(blob, file.name);
                     
                     progressSection.style.display = 'none';
                     spinner.classList.remove('active');
@@ -3631,14 +3747,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                         compressionOptions: { level: 9 }
                     });
                     
-                    const url = URL.createObjectURL(zipBlob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = '✏️ 2-1. 단어_화자명 수정.zip';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
+                    await saveBlobToPath(zipBlob, '👥 3-1. 각 나라별 번역.zip');
                     
                     progressSection.style.display = 'none';
                     spinner.classList.remove('active');
@@ -3789,7 +3898,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
         }
 
         // 다운로드
-        function downloadSpeakerMapping() {
+        async function downloadSpeakerMapping() {
             const saved = localStorage.getItem(SPEAKER_STORAGE_KEY);
             if (!saved) {
                 alert('저장된 화자 매핑이 없습니다.');
@@ -3797,15 +3906,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
             }
             
             const blob = new Blob([saved], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'speaker_mappings.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
+            await saveBlobToPath(blob, 'speaker_mappings.json');
             alert('화자 매핑 파일이 다운로드되었습니다.');
         }
 
@@ -3959,7 +4060,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
         }
 
         // 다운로드
-        function downloadSpeakerPartialMapping() {
+        async function downloadSpeakerPartialMapping() {
             const saved = localStorage.getItem(SPEAKER_PARTIAL_STORAGE_KEY);
             if (!saved) {
                 alert('저장된 화자 매핑이 없습니다.');
@@ -3967,15 +4068,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
             }
             
             const blob = new Blob([saved], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'speaker_partial_mappings.json';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
+            await saveBlobToPath(blob, 'speaker_partial_mappings.json');
             alert('화자 매핑 파일이 다운로드되었습니다.');
         }
 
@@ -4006,13 +4099,26 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
         }
 
         // ========================================
-        // 일본어 두 줄 변환 기능
+        // ========================================
+        // 일본어 변환 기능 (4-1)
         // ========================================
         
         /**
-         * 일본어 문장을 한국어 줄 수에 맞춰 분할
+         * 일본어 변환 입력란 전체 삭제
          */
-        function processJapaneseSplit() {
+        function clearJapaneseConvertInputs() {
+            document.getElementById('japanese_input').value = '';
+            document.getElementById('korean_line1').value = '';
+            document.getElementById('korean_line2').value = '';
+            document.getElementById('korean_line3').value = '';
+            document.getElementById('japaneseSplitResult').style.display = 'none';
+            document.getElementById('japaneseSplitOutput').innerHTML = '';
+        }
+        
+        /**
+         * GPT API로 일본어 문장을 한국어 줄 수에 맞춰 분할
+         */
+        async function processJapaneseSplit() {
             const japaneseInput = document.getElementById('japanese_input').value.trim();
             const koreanLine1 = document.getElementById('korean_line1').value.trim();
             const koreanLine2 = document.getElementById('korean_line2').value.trim();
@@ -4029,59 +4135,141 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                 return;
             }
             
-            // 한국어 줄 수 계산
+            // API 키 확인 (1. 파일 생성 페이지의 키와 동일)
+            const apiKey = localStorage.getItem(API_KEY_STORAGE) || document.getElementById('api_key').value.trim();
+            if (!apiKey) {
+                alert('API 키를 입력하거나 저장해주세요.\n\n1. 파일 생성 탭 아래의 API 키 설정에서 입력 후 저장해주세요.');
+                return;
+            }
+            if (!apiKey.startsWith('sk-')) {
+                alert('올바른 OpenAI API 키 형식이 아닙니다. (sk-로 시작해야 함)');
+                return;
+            }
+            
+            // 한국어 줄 수
             const koreanLines = [koreanLine1, koreanLine2];
             if (koreanLine3) {
                 koreanLines.push(koreanLine3);
             }
             const lineCount = koreanLines.length;
             
-            // 한국어 각 줄의 길이 비율 계산
-            const koreanLengths = koreanLines.map(line => line.length);
-            const totalKoreanLength = koreanLengths.reduce((sum, len) => sum + len, 0);
-            const ratios = koreanLengths.map(len => len / totalKoreanLength);
-            
-            // 일본어 문장 분할 (비율에 따라)
-            const japaneseLength = japaneseInput.length;
-            const japaneseParts = [];
-            let startIndex = 0;
-            
-            for (let i = 0; i < lineCount; i++) {
-                let partLength;
-                if (i === lineCount - 1) {
-                    // 마지막 줄은 나머지 전부
-                    partLength = japaneseLength - startIndex;
-                } else {
-                    // 비율에 따라 길이 계산
-                    partLength = Math.round(japaneseLength * ratios[i]);
-                }
-                
-                const endIndex = Math.min(startIndex + partLength, japaneseLength);
-                japaneseParts.push(japaneseInput.substring(startIndex, endIndex));
-                startIndex = endIndex;
-            }
-            
-            // 결과 표시
+            const btn = document.getElementById('japaneseSplitBtn');
+            const progressDiv = document.getElementById('japaneseSplitProgress');
             const resultDiv = document.getElementById('japaneseSplitResult');
             const outputDiv = document.getElementById('japaneseSplitOutput');
             
+            btn.disabled = true;
+            progressDiv.style.display = 'block';
+            resultDiv.style.display = 'none';
+            
+            try {
+                // GPT 프롬프트 구성
+                let koreanPrompt = '';
+                for (let i = 0; i < koreanLines.length; i++) {
+                    koreanPrompt += `한국어 ${i + 1}번: ${koreanLines[i]}\n`;
+                }
+                
+                const systemPrompt = `You are a Japanese language expert. Your task is to split a Japanese sentence into parts that correspond to each Korean translation line.
+
+RULES:
+1. Split the Japanese sentence so that each part matches the meaning of the corresponding Korean line
+2. Respect natural boundaries (grammar, word boundaries) - do NOT cut in the middle of a word
+3. Return ONLY a JSON array of strings, nothing else. Example: ["part1", "part2", "part3"]
+4. The number of parts must exactly match the number of Korean lines
+5. Do not add any explanation, markdown, or extra text - only the JSON array`;
+
+                const userPrompt = `일본어 문장을 아래 한국어 번역 줄에 맞춰 분할해주세요.
+
+일본어: ${japaneseInput}
+
+${koreanPrompt}
+
+JSON 배열 형식으로만 답변하세요. 예: ["첫번째부분", "두번째부분", "세번째부분"]`;
+
+                const response = await fetch('https://api.openai.com/v1/chat/completions', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${apiKey}`
+                    },
+                    body: JSON.stringify({
+                        model: 'gpt-4o-mini',
+                        messages: [
+                            { role: 'system', content: systemPrompt },
+                            { role: 'user', content: userPrompt }
+                        ],
+                        temperature: 0.2
+                    })
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(errData.error?.message || `API 오류 (${response.status})`);
+                }
+
+                const data = await response.json();
+                let rawContent = data.choices[0].message.content.trim();
+                
+                // JSON 파싱 (마크다운 코드블록 제거)
+                const jsonMatch = rawContent.match(/\[[\s\S]*\]/);
+                if (!jsonMatch) {
+                    throw new Error('GPT가 올바른 형식으로 응답하지 않았습니다.');
+                }
+                
+                const japaneseParts = JSON.parse(jsonMatch[0]);
+                
+                if (!Array.isArray(japaneseParts) || japaneseParts.length !== lineCount) {
+                    throw new Error(`GPT 응답 길이 불일치 (${japaneseParts.length}개 vs ${lineCount}개)`);
+                }
+                
+                // 결과 표시
             let resultHTML = '';
             for (let i = 0; i < lineCount; i++) {
+                const safeJp = japaneseParts[i].replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                const safeKorean = koreanLines[i].replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 resultHTML += `
-                    <div style="margin-bottom: 15px; padding: 12px; background: white; border-radius: 8px; border-left: 4px solid #4caf50;">
-                        <div style="font-weight: 600; color: #1565c0; margin-bottom: 5px;">일본어 ${i + 1}번</div>
-                        <div style="font-size: 1.1rem; color: #333; margin-bottom: 8px;" class="jp-result-line">${japaneseParts[i]}</div>
-                        <div style="font-size: 0.9rem; color: #666;">↔ ${koreanLines[i]}</div>
+                    <div class="jp-result-box" style="background: #e8f5e9; padding: 16px; border-radius: 12px; border: 2px solid #4caf50;">
+                        <div style="font-weight: 600; color: #1565c0; margin-bottom: 8px;">${i + 1}번</div>
+                        <textarea readonly class="jp-result-line" data-index="${i}" style="width: 100%; min-height: 60px; padding: 12px; border: 2px solid #c8e6c9; border-radius: 8px; font-size: 1.1rem; font-family: 'Noto Sans JP', sans-serif; resize: vertical; background: white;">${safeJp}</textarea>
+                        <div style="font-size: 0.9rem; color: #666; margin-top: 8px;">↔ ${safeKorean}</div>
+                        <button type="button" class="btn-secondary" onclick="copyJapaneseSplitLine(${i})" style="margin-top: 10px; padding: 8px 16px;">
+                            📋 복사
+                        </button>
                     </div>
                 `;
             }
             
             outputDiv.innerHTML = resultHTML;
             resultDiv.style.display = 'block';
+            
+            // 전역에 결과 저장 (복사 함수용)
+            window._lastJapaneseSplitParts = japaneseParts;
+                
+            } catch (error) {
+                console.error('일본어 분할 오류:', error);
+                alert('일본어 분할 실패: ' + (error.message || '알 수 없는 오류'));
+            } finally {
+                btn.disabled = false;
+                progressDiv.style.display = 'none';
+            }
         }
         
         /**
-         * 일본어 분할 결과 복사
+         * 일본어 분할 결과 - 특정 줄만 복사
+         */
+        function copyJapaneseSplitLine(index) {
+            const parts = window._lastJapaneseSplitParts;
+            if (!parts || !parts[index]) {
+                alert('복사할 결과가 없습니다.');
+                return;
+            }
+            
+            const textToCopy = parts[index];
+            copyToClipboard(textToCopy, index + 1 + '번');
+        }
+        
+        /**
+         * 일본어 분할 결과 - 전체 복사
          */
         function copyJapaneseSplitResult() {
             const resultLines = document.querySelectorAll('.jp-result-line');
@@ -4090,20 +4278,20 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                 return;
             }
             
-            const textToCopy = Array.from(resultLines).map(el => el.textContent).join('\n');
-            
-            navigator.clipboard.writeText(textToCopy).then(() => {
-                alert('결과가 클립보드에 복사되었습니다!');
-            }).catch(err => {
-                console.error('복사 실패:', err);
-                // 대체 방법
+            const textToCopy = Array.from(resultLines).map(el => el.value).join('\n');
+            copyToClipboard(textToCopy, '전체');
+        }
+        
+        function copyToClipboard(text, label) {
+            navigator.clipboard.writeText(text).then(() => {
+                // 복사 완료 (팝업 없음)
+            }).catch(() => {
                 const textarea = document.createElement('textarea');
-                textarea.value = textToCopy;
+                textarea.value = text;
                 document.body.appendChild(textarea);
                 textarea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textarea);
-                alert('결과가 클립보드에 복사되었습니다!');
             });
         }
 
@@ -4292,14 +4480,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                     
                     // 단일 파일 다운로드
                     const blob = new Blob([convertedContent], { type: 'text/plain;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = newFileName;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
+                    await saveBlobToPath(blob, newFileName);
 
                     progressSection.style.display = 'none';
                     spinner.classList.remove('active');
@@ -4342,14 +4523,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                         compressionOptions: { level: 9 }
                     });
 
-                    const url = URL.createObjectURL(zipBlob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'converted_subtitles.zip';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
+                    await saveBlobToPath(zipBlob, 'converted_subtitles.zip');
 
                     progressSection.style.display = 'none';
                     spinner.classList.remove('active');
