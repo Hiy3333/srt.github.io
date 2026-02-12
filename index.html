@@ -866,22 +866,48 @@
             <div id="tab-file-generate" class="tab-content active">
                 <!-- 다운로드 경로 설정 -->
                 <div class="form-section" style="background: #f0f7ff; padding: 20px; border-radius: 12px; margin-bottom: 25px;">
-                    <label class="form-label" style="margin-bottom: 10px;">
+                    <label class="form-label" style="margin-bottom: 15px;">
                         <span class="label-text">📂 다운로드 경로 설정</span>
                     </label>
-                    <div id="downloadPathSection" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-                        <div id="downloadPathDisplay" style="flex: 1; min-width: 200px; padding: 10px 14px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; color: #666; font-size: 0.95rem;">
-                            경로가 설정되지 않았습니다 (브라우저 기본 다운로드)
+                    
+                    <!-- 1-1 경로 -->
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-weight: 600; margin-bottom: 6px; font-size: 0.9rem;">1-1. SRT 파일 복제 (다국어 파일 생성) 경로</div>
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <div id="downloadPath1Display" style="flex: 1; min-width: 200px; padding: 10px 14px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; color: #666; font-size: 0.95rem;">
+                                경로 미설정 (브라우저 기본)
+                            </div>
+                            <button type="button" class="btn-secondary setPathBtn" data-path="1" style="padding: 10px 20px;">📁 경로 선택</button>
+                            <button type="button" class="btn-secondary clearPathBtn" data-path="1" style="padding: 10px 20px; display: none;">✕ 해제</button>
                         </div>
-                        <button type="button" id="setDownloadPathBtn" class="btn-secondary" style="padding: 10px 20px;">
-                            📁 경로 선택
-                        </button>
-                        <button type="button" id="clearDownloadPathBtn" class="btn-secondary" style="padding: 10px 20px; display: none;">
-                            ✕ 해제
-                        </button>
                     </div>
-                    <small style="display: block; margin-top: 8px; color: #666; font-size: 0.85rem;">
-                        💡 클릭하여 폴더를 선택하면, 이 페이지의 모든 다운로드가 해당 경로에 저장됩니다. (Chrome, Edge에서만 지원)
+                    
+                    <!-- 2-1 경로 -->
+                    <div style="margin-bottom: 15px;">
+                        <div style="font-weight: 600; margin-bottom: 6px; font-size: 0.9rem;">2-1. 단어/화자명 수정 경로</div>
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <div id="downloadPath2Display" style="flex: 1; min-width: 200px; padding: 10px 14px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; color: #666; font-size: 0.95rem;">
+                                경로 미설정 (브라우저 기본)
+                            </div>
+                            <button type="button" class="btn-secondary setPathBtn" data-path="2" style="padding: 10px 20px;">📁 경로 선택</button>
+                            <button type="button" class="btn-secondary clearPathBtn" data-path="2" style="padding: 10px 20px; display: none;">✕ 해제</button>
+                        </div>
+                    </div>
+                    
+                    <!-- 3-1 경로 -->
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 6px; font-size: 0.9rem;">3-1. 각 나라별 번역 경로</div>
+                        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                            <div id="downloadPath3Display" style="flex: 1; min-width: 200px; padding: 10px 14px; background: white; border: 2px solid #e0e0e0; border-radius: 8px; color: #666; font-size: 0.95rem;">
+                                경로 미설정 (브라우저 기본)
+                            </div>
+                            <button type="button" class="btn-secondary setPathBtn" data-path="3" style="padding: 10px 20px;">📁 경로 선택</button>
+                            <button type="button" class="btn-secondary clearPathBtn" data-path="3" style="padding: 10px 20px; display: none;">✕ 해제</button>
+                        </div>
+                    </div>
+                    
+                    <small style="display: block; margin-top: 12px; color: #666; font-size: 0.85rem;">
+                        💡 각 기능별 결과물이 해당 경로에 저장됩니다. (Chrome, Edge에서만 지원)
                     </small>
                 </div>
 
@@ -1608,9 +1634,10 @@
         // ========================================
         const DOWNLOAD_PATH_DB = 'srt_download_path_db';
         const DOWNLOAD_PATH_STORE = 'path_store';
-        const DOWNLOAD_PATH_KEY = 'directory_handle';
         
-        let downloadDirHandle = null;
+        let downloadDirHandle1 = null;
+        let downloadDirHandle2 = null;
+        let downloadDirHandle3 = null;
         
         async function openDownloadPathDB() {
             return new Promise((resolve, reject) => {
@@ -1623,13 +1650,13 @@
             });
         }
         
-        async function loadDownloadPathHandle() {
-            if (!('showDirectoryPicker' in window)) return;
+        async function loadDownloadPathHandle(pathNum) {
+            if (!('showDirectoryPicker' in window)) return null;
             try {
                 const db = await openDownloadPathDB();
                 const tx = db.transaction(DOWNLOAD_PATH_STORE, 'readonly');
                 const store = tx.objectStore(DOWNLOAD_PATH_STORE);
-                const req = store.get(DOWNLOAD_PATH_KEY);
+                const req = store.get('path_' + pathNum);
                 return new Promise((resolve) => {
                     req.onsuccess = () => {
                         const handle = req.result;
@@ -1648,12 +1675,12 @@
             }
         }
         
-        async function saveDownloadPathHandle(handle) {
+        async function saveDownloadPathHandle(pathNum, handle) {
             try {
                 const db = await openDownloadPathDB();
                 const tx = db.transaction(DOWNLOAD_PATH_STORE, 'readwrite');
                 const store = tx.objectStore(DOWNLOAD_PATH_STORE);
-                store.put(handle, DOWNLOAD_PATH_KEY);
+                store.put(handle, 'path_' + pathNum);
                 return new Promise((resolve, reject) => {
                     tx.oncomplete = () => resolve();
                     tx.onerror = () => reject(tx.error);
@@ -1663,39 +1690,45 @@
             }
         }
         
-        async function clearDownloadPathHandle() {
+        async function clearDownloadPathHandle(pathNum) {
             try {
                 const db = await openDownloadPathDB();
                 const tx = db.transaction(DOWNLOAD_PATH_STORE, 'readwrite');
-                tx.objectStore(DOWNLOAD_PATH_STORE).delete(DOWNLOAD_PATH_KEY);
+                tx.objectStore(DOWNLOAD_PATH_STORE).delete('path_' + pathNum);
             } catch (e) {}
-            downloadDirHandle = null;
+            if (pathNum === 1) downloadDirHandle1 = null;
+            else if (pathNum === 2) downloadDirHandle2 = null;
+            else if (pathNum === 3) downloadDirHandle3 = null;
         }
         
-        function updateDownloadPathUI() {
-            const display = document.getElementById('downloadPathDisplay');
-            const clearBtn = document.getElementById('clearDownloadPathBtn');
-            if (downloadDirHandle) {
-                display.textContent = '📁 ' + downloadDirHandle.name;
-                display.style.color = '#1565c0';
-                clearBtn.style.display = 'inline-block';
-            } else {
-                display.textContent = '경로가 설정되지 않았습니다 (브라우저 기본 다운로드)';
-                display.style.color = '#666';
-                clearBtn.style.display = 'none';
+        function updateDownloadPathUI(pathNum) {
+            const display = document.getElementById('downloadPath' + pathNum + 'Display');
+            const clearBtns = document.querySelectorAll('.clearPathBtn[data-path="' + pathNum + '"]');
+            const handle = pathNum === 1 ? downloadDirHandle1 : pathNum === 2 ? downloadDirHandle2 : downloadDirHandle3;
+            if (display) {
+                if (handle) {
+                    display.textContent = '📁 ' + handle.name;
+                    display.style.color = '#1565c0';
+                } else {
+                    display.textContent = '경로 미설정 (브라우저 기본)';
+                    display.style.color = '#666';
+                }
             }
+            clearBtns.forEach(btn => { btn.style.display = handle ? 'inline-block' : 'none'; });
         }
         
-        async function setDownloadPath() {
+        async function setDownloadPath(pathNum) {
             if (!('showDirectoryPicker' in window)) {
                 alert('이 브라우저는 폴더 선택을 지원하지 않습니다.\nChrome 또는 Edge를 사용해주세요.');
                 return;
             }
             try {
                 const handle = await window.showDirectoryPicker({ mode: 'readwrite' });
-                downloadDirHandle = handle;
-                await saveDownloadPathHandle(handle);
-                updateDownloadPathUI();
+                if (pathNum === 1) { downloadDirHandle1 = handle; }
+                else if (pathNum === 2) { downloadDirHandle2 = handle; }
+                else if (pathNum === 3) { downloadDirHandle3 = handle; }
+                await saveDownloadPathHandle(pathNum, handle);
+                updateDownloadPathUI(pathNum);
             } catch (e) {
                 if (e.name !== 'AbortError') {
                     console.error('경로 선택 오류:', e);
@@ -1704,15 +1737,16 @@
             }
         }
         
-        async function clearDownloadPath() {
-            await clearDownloadPathHandle();
-            updateDownloadPathUI();
+        async function clearDownloadPath(pathNum) {
+            await clearDownloadPathHandle(pathNum);
+            updateDownloadPathUI(pathNum);
         }
         
-        async function saveBlobToPath(blob, filename) {
-            if (downloadDirHandle) {
+        async function saveBlobToPath(blob, filename, pathType) {
+            const handle = pathType === 1 ? downloadDirHandle1 : pathType === 2 ? downloadDirHandle2 : pathType === 3 ? downloadDirHandle3 : null;
+            if (handle) {
                 try {
-                    const fileHandle = await downloadDirHandle.getFileHandle(filename, { create: true });
+                    const fileHandle = await handle.getFileHandle(filename, { create: true });
                     const writable = await fileHandle.createWritable();
                     await writable.write(blob);
                     await writable.close();
@@ -1732,12 +1766,20 @@
             return false;
         }
         
-        document.getElementById('setDownloadPathBtn').addEventListener('click', setDownloadPath);
-        document.getElementById('clearDownloadPathBtn').addEventListener('click', clearDownloadPath);
+        document.querySelectorAll('.setPathBtn').forEach(btn => {
+            btn.addEventListener('click', () => setDownloadPath(parseInt(btn.getAttribute('data-path'))));
+        });
+        document.querySelectorAll('.clearPathBtn').forEach(btn => {
+            btn.addEventListener('click', () => clearDownloadPath(parseInt(btn.getAttribute('data-path'))));
+        });
         
         window.addEventListener('DOMContentLoaded', async () => {
-            downloadDirHandle = await loadDownloadPathHandle();
-            updateDownloadPathUI();
+            downloadDirHandle1 = await loadDownloadPathHandle(1);
+            downloadDirHandle2 = await loadDownloadPathHandle(2);
+            downloadDirHandle3 = await loadDownloadPathHandle(3);
+            updateDownloadPathUI(1);
+            updateDownloadPathUI(2);
+            updateDownloadPathUI(3);
         });
 
         // ========================================
@@ -1829,32 +1871,23 @@
                 // 복제할 언어 목록
                 const languages = ['영어', '일본어', '중국어', '인도네시아어', '스페인어', '태국어'];
                 
-                const zip = new JSZip();
+                const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
                 
                 for (let i = 0; i < languages.length; i++) {
                     const lang = languages[i];
+                    const filename = `${lang}.srt`;
                     
                     document.getElementById('fileGenerateProgressText').textContent = 
-                        `복제 중: ${lang}.srt`;
+                        `저장 중: ${filename}`;
                     document.getElementById('fileGenerateProgressDetails').textContent = 
                         `${i + 1} / ${languages.length} 파일`;
                     
-                    zip.file(`${lang}.srt`, srtContent);
+                    await saveBlobToPath(blob, filename, 1);
                 }
-                
-                // ZIP 다운로드
-                document.getElementById('fileGenerateProgressText').textContent = 'ZIP 파일 생성 중...';
-                const zipBlob = await zip.generateAsync({ 
-                    type: 'blob',
-                    compression: 'DEFLATE',
-                    compressionOptions: { level: 9 }
-                });
-                
-                await saveBlobToPath(zipBlob, '✏️ 2-1. 단어_화자명 수정.zip');
                 
                 progressSection.style.display = 'none';
                 spinner.classList.remove('active');
-                alert(`✅ SRT 복제 완료!\n\n${languages.length}개 언어 파일이 생성되어 다운로드되었습니다.`);
+                alert(`✅ SRT 복제 완료!\n\n${languages.length}개 언어 파일이 저장되었습니다.`);
                 
             } catch (error) {
                 console.error('Error:', error);
@@ -2328,7 +2361,7 @@ Now translate the following text:`
         async function downloadSRTFile(langCode, blocks) {
             const srtContent = generateSRT(blocks);
             const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
-            await saveBlobToPath(blob, `${currentFilename}_${langCode}.srt`);
+            await saveBlobToPath(blob, `${currentFilename}_${langCode}.srt`, 3);
             console.log(`다운로드 완료: ${currentFilename}_${langCode}.srt`);
         }
 
@@ -2345,7 +2378,7 @@ Now translate the following text:`
             const zipBlob = await zip.generateAsync({ type: 'blob' });
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
             const downloadFilename = `${currentFilename}_translated_${timestamp}.zip`;
-            await saveBlobToPath(zipBlob, downloadFilename);
+            await saveBlobToPath(zipBlob, downloadFilename, 3);
         }
 
         // 실패 정보 표시
@@ -2850,7 +2883,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                     // 개별 파일 다운로드 (원본 파일명 유지)
                     const srtContent = generateSRT(translatedBlocks);
                     const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
-                    await saveBlobToPath(blob, file.name);
+                    await saveBlobToPath(blob, file.name, 3);
 
                     if (errorCount > 0) {
                         console.log(`${file.name}: ${errorCount}개 블록 번역 실패`);
@@ -3084,7 +3117,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                             const outputFilename = `${currentFilename}_${langName.split(' ')[0]}.srt`;
                             const srtContent = generateSRT(result.translatedBlocks);
                             const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
-                            await saveBlobToPath(blob, outputFilename);
+                            await saveBlobToPath(blob, outputFilename, 3);
                             
                             totalTranslationsCompleted++;
                             
@@ -3304,7 +3337,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
 
             const blob = new Blob([reviewLogContent], { type: 'text/plain;charset=utf-8' });
             const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
-            await saveBlobToPath(blob, `SRT_검토결과_${timestamp}.txt`);
+            await saveBlobToPath(blob, `SRT_검토결과_${timestamp}.txt`, 3);
         });
 
         // ========================================
@@ -3429,7 +3462,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
             }
             
             const blob = new Blob([JSON.stringify(pairs, null, 2)], { type: 'application/json' });
-            await saveBlobToPath(blob, 'word_pairs.json');
+            await saveBlobToPath(blob, 'word_pairs.json', 2);
             alert('단어 쌍 파일이 다운로드되었습니다.');
         }
 
@@ -3649,7 +3682,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                     
                     // 단일 파일 다운로드
                     const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-                    await saveBlobToPath(blob, file.name);
+                    await saveBlobToPath(blob, file.name, 2);
                     
                     progressSection.style.display = 'none';
                     spinner.classList.remove('active');
@@ -3658,9 +3691,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                     alert(message);
                     
                 } else {
-                    // 파일이 2개 이상인 경우 ZIP으로
-                    const zip = new JSZip();
-                    
+                    // 파일이 2개 이상인 경우 각 SRT 파일 개별 저장
                     for (let i = 0; i < files.length; i++) {
                         const file = files[i];
                         const rawLang = file.name.replace('.srt', '');
@@ -3670,8 +3701,6 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                             `처리 중: ${file.name}`;
                         document.getElementById('combinedProgressDetails').textContent = 
                             `${i + 1} / ${files.length} 파일`;
-                        
-                        logLines.push(`📄 [${rawLang}] 처리 시작`);
                         
                         try {
                             let content = await file.text();
@@ -3688,7 +3717,6 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                                 if (count > 0) {
                                     content = content.replace(regex, to);
                                     totalWordReplacements += count;
-                                    logLines.push(`  ✏️ [단어] "${from}" → "${to}": ${count}회 치환`);
                                 }
                             }
                             
@@ -3703,7 +3731,6 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                                     if (count > 0) {
                                         content = content.replace(regex, targetName);
                                         totalSpeakerReplacements += count;
-                                        logLines.push(`  🎭 [전체] "${krName}" → "${targetName}": ${count}회 치환`);
                                     }
                                 }
                             }
@@ -3719,39 +3746,21 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                                     if (count > 0) {
                                         content = content.replace(regex, targetName);
                                         totalSpeakerPartialReplacements += count;
-                                        logLines.push(`  🎭 [부분] "${krName}" → "${targetName}": ${count}회 치환`);
                                     }
                                 }
                             }
                             
-                            zip.file(file.name, content);
-                            logLines.push(`✅ 저장 완료 → ${file.name} (단어: ${totalWordReplacements}회, 전체: ${totalSpeakerReplacements}회, 부분: ${totalSpeakerPartialReplacements}회)`);
+                            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+                            await saveBlobToPath(blob, file.name, 2);
                             
                         } catch (error) {
-                            logLines.push(`⚠️ ${file.name} 처리 실패: ${error.message}`);
                             console.error(`파일 처리 실패: ${file.name}`, error);
                         }
-                        
-                        logLines.push('-'.repeat(40));
-                        logLines.push('');
                     }
-                    
-                    // 로그 파일 추가
-                    zip.file('수정_로그.txt', logLines.join('\n'));
-                    
-                    // ZIP 다운로드
-                    document.getElementById('combinedProgressText').textContent = 'ZIP 파일 생성 중...';
-                    const zipBlob = await zip.generateAsync({ 
-                        type: 'blob',
-                        compression: 'DEFLATE',
-                        compressionOptions: { level: 9 }
-                    });
-                    
-                    await saveBlobToPath(zipBlob, '👥 3-1. 각 나라별 번역.zip');
                     
                     progressSection.style.display = 'none';
                     spinner.classList.remove('active');
-                    alert(`✅ 단어/화자명 수정 완료!\n\n${files.length}개 파일이 처리되어 다운로드되었습니다.`);
+                    alert(`✅ 단어/화자명 수정 완료!\n\n${files.length}개 파일이 저장되었습니다.`);
                 }
                 
             } catch (error) {
@@ -3906,7 +3915,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
             }
             
             const blob = new Blob([saved], { type: 'application/json' });
-            await saveBlobToPath(blob, 'speaker_mappings.json');
+            await saveBlobToPath(blob, 'speaker_mappings.json', 2);
             alert('화자 매핑 파일이 다운로드되었습니다.');
         }
 
@@ -4068,7 +4077,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
             }
             
             const blob = new Blob([saved], { type: 'application/json' });
-            await saveBlobToPath(blob, 'speaker_partial_mappings.json');
+            await saveBlobToPath(blob, 'speaker_partial_mappings.json', 2);
             alert('화자 매핑 파일이 다운로드되었습니다.');
         }
 
