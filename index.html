@@ -1005,6 +1005,25 @@
 
             <!-- 탭 3: 각 나라별 번역 -->
             <div id="tab-translation" class="tab-content">
+                <!-- AI 모델 선택 (3-1, 3-2 공통) -->
+                <div class="form-section" style="margin-bottom: 24px; padding: 16px; background: #f8f9fa; border-radius: 12px;">
+                    <label class="form-label">
+                        <span class="label-text">🤖 번역 AI 모델 선택</span>
+                    </label>
+                    <div class="model-select-group" style="display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px;">
+                        <label class="model-radio" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="radio" name="translation_model" value="gpt-4o-mini" id="model_4o_mini" checked>
+                            <span>GPT-4o Mini</span>
+                            <small style="color: #666; font-size: 0.85rem;">(빠르고 저렴)</small>
+                        </label>
+                        <label class="model-radio" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="radio" name="translation_model" value="gpt-5.4" id="model_5_4">
+                            <span>GPT-5.4</span>
+                            <small style="color: #666; font-size: 0.85rem;">(고품질)</small>
+                        </label>
+                    </div>
+                </div>
+
                 <!-- 3-1. 각 나라별 번역 -->
                 <div class="form-section">
                     <label class="form-label">
@@ -2231,9 +2250,16 @@
             }
         }
 
+        // 선택된 번역 모델 가져오기
+        function getSelectedTranslationModel() {
+            const radio = document.querySelector('input[name="translation_model"]:checked');
+            return radio ? radio.value : 'gpt-4o-mini';
+        }
+
         // GPT API 번역 함수
-        async function translateText(apiKey, text, targetLanguage, maxRetries = 3) {
+        async function translateText(apiKey, text, targetLanguage, model = null, maxRetries = 3) {
             if (isCancelled) throw new Error('번역이 취소되었습니다.');
+            const useModel = model || getSelectedTranslationModel();
             
             for (let attempt = 1; attempt <= maxRetries; attempt++) {
                 if (isCancelled) throw new Error('번역이 취소되었습니다.');
@@ -2246,7 +2272,7 @@
                             'Authorization': `Bearer ${apiKey}`
                         },
                         body: JSON.stringify({
-                            model: 'gpt-4o-mini',
+                            model: useModel,
                             messages: [
                                 {
                                     role: 'system',
@@ -2310,8 +2336,9 @@ Now translate the following text:`
             const targetLanguage = LANGUAGES[langCode];
             const translatedBlocks = [];
             const errors = [];
+            const model = getSelectedTranslationModel();
             
-            console.log(`${LANGUAGES[langCode]} 번역 시작 - 총 ${blocks.length}개 블록`);
+            console.log(`${LANGUAGES[langCode]} 번역 시작 (모델: ${model}) - 총 ${blocks.length}개 블록`);
             
             for (let i = 0; i < blocks.length; i++) {
                 if (isCancelled) throw new Error('번역이 취소되었습니다.');
@@ -2323,7 +2350,7 @@ Now translate the following text:`
                 }
                 
                 try {
-                    const translatedText = await translateText(apiKey, block.text, targetLanguage);
+                    const translatedText = await translateText(apiKey, block.text, targetLanguage, model);
                     translatedBlocks.push({
                         index: block.index,
                         timecode: block.timecode,
@@ -2740,7 +2767,7 @@ Now translate the following text:`
                                                     'Authorization': `Bearer ${apiKey}`
                                                 },
                                                 body: JSON.stringify({
-                                                    model: 'gpt-4o-mini',
+                                                    model: getSelectedTranslationModel(),
                                                     messages: [
                                                         {
                                                             role: 'system',
@@ -2806,7 +2833,7 @@ Now translate the following Korean text to ${targetLanguage}. Remember: NO Korea
                                                     'Authorization': `Bearer ${apiKey}`
                                                 },
                                                 body: JSON.stringify({
-                                                    model: 'gpt-4o-mini',
+                                                    model: getSelectedTranslationModel(),
                                                     messages: [
                                                         {
                                                             role: 'system',

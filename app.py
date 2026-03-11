@@ -70,6 +70,11 @@ def translate():
         if not selected_languages:
             return jsonify({'error': '최소 하나의 언어를 선택해주세요.'}), 400
         
+        # 모델 선택 (gpt-4o-mini 또는 gpt-5.4)
+        model = request.form.get('model', 'gpt-4o-mini')
+        if model not in ('gpt-4o-mini', 'gpt-5.4'):
+            model = 'gpt-4o-mini'
+        
         # 파일 읽기
         srt_content = file.read().decode('utf-8')
         
@@ -79,7 +84,7 @@ def translate():
             return jsonify({'error': 'SRT 파일을 파싱할 수 없습니다. 파일 형식을 확인해주세요.'}), 400
         
         # 번역기 초기화
-        translator = GPTTranslator(api_key)
+        translator = GPTTranslator(api_key, model)
         
         # 메모리에 ZIP 파일 생성
         zip_buffer = io.BytesIO()
