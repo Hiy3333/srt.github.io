@@ -94,7 +94,7 @@ def translate():
         original_filename = os.path.splitext(secure_filename(file.filename))[0]
         
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            # 선택된 언어별로 3개씩 묶어 병렬 번역
+            # 선택된 언어별로 3개씩 묶어 병렬 번역 (배치 완료 시 즉시 ZIP에 추가)
             valid_langs = [lc for lc in selected_languages if lc in LANGUAGES]
             BATCH_SIZE = 3
             
@@ -102,15 +102,19 @@ def translate():
                 translated = translator.translate_srt_blocks(blocks, lang_code, verbose=False)
                 return lang_code, translated
             
-            for i in range(0, len(valid_langs), BATCH_SIZE):
-                batch = valid_langs[i:i + BATCH_SIZE]
-                with ThreadPoolExecutor(max_workers=len(batch)) as executor:
-                    futures = {executor.submit(translate_lang, lc): lc for lc in batch}
-                    for future in as_completed(futures):
-                        lang_code, translated_blocks = future.result()
-                        translated_srt = SRTParser.generate(translated_blocks)
-                        filename = f"{original_filename}_{lang_code}.srt"
-                        zip_file.writestr(filename, translated_srt)
+            try:
+                for i in range(0, len(valid_langs), BATCH_SIZE):
+                    batch = valid_langs[i:i + BATCH_SIZE]
+                    with ThreadPoolExecutor(max_workers=len(batch)) as executor:
+                        futures = {executor.submit(translate_lang, lc): lc for lc in batch}
+                        for future in as_completed(futures):
+                            lang_code, translated_blocks = future.result()
+                            translated_srt = SRTParser.generate(translated_blocks)
+                            filename = f"{original_filename}_{lang_code}.srt"
+                            zip_file.writestr(filename, translated_srt)
+            except Exception:
+                # 오류 발생 시에도 완료된 배치 결과는 ZIP에 포함됨
+                pass
         
         # ZIP 파일을 전송 준비
         zip_buffer.seek(0)

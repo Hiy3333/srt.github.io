@@ -2845,16 +2845,24 @@ Now translate the following text:`
                     return { translatedBlocks, name, errorCount };
                 }
 
-                // 여러 파일 3개씩 묶어 동시 번역
+                // 여러 파일 3개씩 묶어 동시 번역 (배치 완료 시 즉시 다운로드)
                 const BATCH_SIZE = 3;
-                const results = [];
                 for (let bi = 0; bi < parsedFiles.length; bi += BATCH_SIZE) {
                     if (speakerIsCancelled) break;
                     const batchIndices = Array.from({ length: Math.min(BATCH_SIZE, parsedFiles.length - bi) }, (_, k) => bi + k);
                     const batchResults = await Promise.all(
                         batchIndices.map(i => translateSingleFile(i))
                     );
-                    results.push(...batchResults);
+                    
+                    // 배치 완료 즉시 다운로드 (오류 시에도 완료된 결과 보존)
+                    for (const result of batchResults) {
+                        if (result) {
+                            const srtContent = generateSRT(result.translatedBlocks);
+                            const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
+                            await saveBlobToPath(blob, result.name, 3);
+                            if (result.errorCount > 0) console.log(`${result.name}: ${result.errorCount}개 블록 번역 실패`);
+                        }
+                    }
                 }
 
                 if (speakerIsCancelled) {
@@ -2865,15 +2873,6 @@ Now translate the following text:`
                 }
 
                 stopSpeakerTimer();
-
-                for (const result of results) {
-                    if (result) {
-                        const srtContent = generateSRT(result.translatedBlocks);
-                        const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
-                        await saveBlobToPath(blob, result.name, 3);
-                        if (result.errorCount > 0) console.log(`${result.name}: ${result.errorCount}개 블록 번역 실패`);
-                    }
-                }
 
                 if (!speakerIsCancelled) {
                     progressSection.style.display = 'none';
@@ -3066,11 +3065,10 @@ Now translate the following text:`
                     console.log(`[${file.name}] 파싱된 블록 수: ${originalBlocks.length}`);
                     currentFilename = file.name.replace('.srt', '');
                     
-                    // 각 언어별로 3개씩 묶어 병렬 번역
+                    // 각 언어별로 3개씩 묶어 병렬 번역 (배치 완료 시 즉시 다운로드)
                     const progressMap = {};
                     const totalBlocksAllLangs = originalBlocks.length * selectedLanguages.length;
                     const BATCH_SIZE = 3;
-                    const langResults = [];
                     
                     for (let bi = 0; bi < selectedLanguages.length; bi += BATCH_SIZE) {
                         if (isCancelled) break;
@@ -3098,25 +3096,22 @@ Now translate the following text:`
                             )
                         );
                         const batchResults = await Promise.all(batchPromises);
-                        langResults.push(...batchResults);
-                    }
-                    
-                    if (isCancelled) break;
-                    
-                    // 결과 저장 및 다운로드
-                    for (let li = 0; li < selectedLanguages.length; li++) {
-                        const langCode = selectedLanguages[li];
-                        const langName = LANGUAGES[langCode];
-                        const result = langResults[li];
                         
-                        translationResults[langCode] = result.translatedBlocks;
-                        failedBlocks[langCode] = result.errors.map(e => e.originalIndex);
-                        
-                        const outputFilename = `${currentFilename}_${langName.split(' ')[0]}.srt`;
-                        const srtContent = generateSRT(result.translatedBlocks);
-                        const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
-                        await saveBlobToPath(blob, outputFilename, 3);
-                        totalTranslationsCompleted++;
+                        // 배치 완료 즉시 다운로드 (오류 시에도 완료된 결과 보존)
+                        for (let li = 0; li < batch.length; li++) {
+                            const langCode = batch[li];
+                            const langName = LANGUAGES[langCode];
+                            const result = batchResults[li];
+                            
+                            translationResults[langCode] = result.translatedBlocks;
+                            failedBlocks[langCode] = result.errors.map(e => e.originalIndex);
+                            
+                            const outputFilename = `${currentFilename}_${langName.split(' ')[0]}.srt`;
+                            const srtContent = generateSRT(result.translatedBlocks);
+                            const blob = new Blob([srtContent], { type: 'text/plain;charset=utf-8' });
+                            await saveBlobToPath(blob, outputFilename, 3);
+                            totalTranslationsCompleted++;
+                        }
                     }
                     
                     document.getElementById('progressDetails').textContent = 
