@@ -89,8 +89,8 @@ class GPTTranslator:
     
     # 지원 모델 목록
     MODELS = {
-        'gpt-4o-mini': 'GPT-4o Mini (빠르고 저렴)',
-        'gpt-5.4': 'GPT-5.4 (고품질)'
+        'gpt-4o-mini': '빠르고 저렴',
+        'gpt-5.4': '고품질'
     }
     
     def __init__(self, api_key: str, model: str = 'gpt-4o-mini'):
@@ -268,7 +268,7 @@ def main():
     output_dir = output_dir.strip('"').strip("'") if output_dir else None
     
     # 모델 선택 (선택사항)
-    print("\n모델 선택: 1=gpt-4o-mini (빠르고 저렴), 2=gpt-5.4 (고품질)")
+    print("\n모델 선택: 1=빠르고 저렴, 2=고품질")
     model_choice = input("모델 번호 (엔터 시 1): ").strip() or "1"
     model = "gpt-5.4" if model_choice == "2" else "gpt-4o-mini"
     
