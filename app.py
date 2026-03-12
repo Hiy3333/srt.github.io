@@ -94,20 +94,23 @@ def translate():
         original_filename = os.path.splitext(secure_filename(file.filename))[0]
         
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            # 선택된 언어별로 병렬 번역
+            # 선택된 언어별로 3개씩 묶어 병렬 번역
             valid_langs = [lc for lc in selected_languages if lc in LANGUAGES]
+            BATCH_SIZE = 3
             
             def translate_lang(lang_code):
                 translated = translator.translate_srt_blocks(blocks, lang_code, verbose=False)
                 return lang_code, translated
             
-            with ThreadPoolExecutor(max_workers=min(6, len(valid_langs))) as executor:
-                futures = {executor.submit(translate_lang, lc): lc for lc in valid_langs}
-                for future in as_completed(futures):
-                    lang_code, translated_blocks = future.result()
-                    translated_srt = SRTParser.generate(translated_blocks)
-                    filename = f"{original_filename}_{lang_code}.srt"
-                    zip_file.writestr(filename, translated_srt)
+            for i in range(0, len(valid_langs), BATCH_SIZE):
+                batch = valid_langs[i:i + BATCH_SIZE]
+                with ThreadPoolExecutor(max_workers=len(batch)) as executor:
+                    futures = {executor.submit(translate_lang, lc): lc for lc in batch}
+                    for future in as_completed(futures):
+                        lang_code, translated_blocks = future.result()
+                        translated_srt = SRTParser.generate(translated_blocks)
+                        filename = f"{original_filename}_{lang_code}.srt"
+                        zip_file.writestr(filename, translated_srt)
         
         # ZIP 파일을 전송 준비
         zip_buffer.seek(0)

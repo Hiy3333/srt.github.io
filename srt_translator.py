@@ -217,8 +217,9 @@ class SRTTranslatorApp:
         # 입력 파일명에서 확장자 제거
         base_name = os.path.splitext(os.path.basename(input_file))[0]
         
-        # 각 언어로 병렬 번역 및 저장
+        # 각 언어로 3개씩 묶어 병렬 번역 및 저장
         lang_items = list(self.translator.LANGUAGES.items())
+        BATCH_SIZE = 3
         
         def translate_and_save(lang_code: str, lang_name: str):
             print(f"\n{lang_name} 번역 작업 시작...")
@@ -230,13 +231,15 @@ class SRTTranslatorApp:
             print(f"✓ 저장 완료: {output_file}")
             return output_file
         
-        with ThreadPoolExecutor(max_workers=min(6, len(lang_items))) as executor:
-            futures = {
-                executor.submit(translate_and_save, lc, ln): (lc, ln)
-                for lc, ln in lang_items
-            }
-            for future in as_completed(futures):
-                future.result()
+        for i in range(0, len(lang_items), BATCH_SIZE):
+            batch = lang_items[i:i + BATCH_SIZE]
+            with ThreadPoolExecutor(max_workers=len(batch)) as executor:
+                futures = {
+                    executor.submit(translate_and_save, lc, ln): (lc, ln)
+                    for lc, ln in batch
+                }
+                for future in as_completed(futures):
+                    future.result()
         
         print(f"\n{'='*50}")
         print("모든 번역이 완료되었습니다!")

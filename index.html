@@ -2835,7 +2835,7 @@ Now translate the following text:`
                         }
 
                         if (speakerIsCancelled) return null;
-                        translatedBlocks.push({ index: block.index, timecode: block.timecode, text: translatedText });
+                        translatedBlocks.push({ index: block.index, timecode: block.timecode, text: translatedText ?? `[번역 실패 - 원본] ${block.text}` });
                         
                         progressMap[fileIdx] = { completed: j + 1, total: blocks.length };
                         updateSpeakerProgressParallel(progressMap, fileBlockCounts, parsedFiles.map(p => p.name));
@@ -2845,10 +2845,17 @@ Now translate the following text:`
                     return { translatedBlocks, name, errorCount };
                 }
 
-                // 여러 파일 동시 번역
-                const results = await Promise.all(
-                    parsedFiles.map((_, i) => translateSingleFile(i))
-                );
+                // 여러 파일 3개씩 묶어 동시 번역
+                const BATCH_SIZE = 3;
+                const results = [];
+                for (let bi = 0; bi < parsedFiles.length; bi += BATCH_SIZE) {
+                    if (speakerIsCancelled) break;
+                    const batchIndices = Array.from({ length: Math.min(BATCH_SIZE, parsedFiles.length - bi) }, (_, k) => bi + k);
+                    const batchResults = await Promise.all(
+                        batchIndices.map(i => translateSingleFile(i))
+                    );
+                    results.push(...batchResults);
+                }
 
                 if (speakerIsCancelled) {
                     progressSection.style.display = 'none';
@@ -3059,35 +3066,40 @@ Now translate the following text:`
                     console.log(`[${file.name}] 파싱된 블록 수: ${originalBlocks.length}`);
                     currentFilename = file.name.replace('.srt', '');
                     
-                    // 각 언어별로 병렬 번역
+                    // 각 언어별로 3개씩 묶어 병렬 번역
                     const progressMap = {};
                     const totalBlocksAllLangs = originalBlocks.length * selectedLanguages.length;
+                    const BATCH_SIZE = 3;
+                    const langResults = [];
                     
-                    const langPromises = selectedLanguages.map(langCode => {
-                        const langName = LANGUAGES[langCode];
-                        return translateBlocks(
-                            apiKey, 
-                            originalBlocks, 
-                            langCode,
-                            (code, current, total, errorCount) => {
-                                progressMap[code] = { current, total };
-                                const totalCompleted = Object.values(progressMap).reduce((s, p) => s + p.current, 0);
-                                const percent = totalBlocksAllLangs > 0 ? Math.round((totalCompleted / totalBlocksAllLangs) * 100) : 0;
-                                document.getElementById('progressBar').style.width = `${percent}%`;
-                                document.getElementById('progressPercent').textContent = `${percent}%`;
-                                document.getElementById('progressText').textContent = 
-                                    `병렬 번역: ${totalCompleted} / ${totalBlocksAllLangs} 블록 (${percent}%)`;
-                                document.getElementById('progressDetails').textContent = 
-                                    `파일: ${fileIdx + 1} / ${files.length} | ${selectedLanguages.length}개 언어 동시 처리 중`;
-                                currentLangCompletedBlocks = totalCompleted;
-                                currentLangTotalBlocks = totalBlocksAllLangs;
-                                completedBlocks = totalCompleted;
-                                totalBlocks = totalBlocksAllLangs;
-                            }
+                    for (let bi = 0; bi < selectedLanguages.length; bi += BATCH_SIZE) {
+                        if (isCancelled) break;
+                        const batch = selectedLanguages.slice(bi, bi + BATCH_SIZE);
+                        const batchPromises = batch.map(langCode =>
+                            translateBlocks(
+                                apiKey, 
+                                originalBlocks, 
+                                langCode,
+                                (code, current, total, errorCount) => {
+                                    progressMap[code] = { current, total };
+                                    const totalCompleted = Object.values(progressMap).reduce((s, p) => s + p.current, 0);
+                                    const percent = totalBlocksAllLangs > 0 ? Math.round((totalCompleted / totalBlocksAllLangs) * 100) : 0;
+                                    document.getElementById('progressBar').style.width = `${percent}%`;
+                                    document.getElementById('progressPercent').textContent = `${percent}%`;
+                                    document.getElementById('progressText').textContent = 
+                                        `병렬 번역: ${totalCompleted} / ${totalBlocksAllLangs} 블록 (${percent}%)`;
+                                    document.getElementById('progressDetails').textContent = 
+                                        `파일: ${fileIdx + 1} / ${files.length} | ${selectedLanguages.length}개 언어 (${batch.length}개 동시 처리 중)`;
+                                    currentLangCompletedBlocks = totalCompleted;
+                                    currentLangTotalBlocks = totalBlocksAllLangs;
+                                    completedBlocks = totalCompleted;
+                                    totalBlocks = totalBlocksAllLangs;
+                                }
+                            )
                         );
-                    });
-                    
-                    const langResults = await Promise.all(langPromises);
+                        const batchResults = await Promise.all(batchPromises);
+                        langResults.push(...batchResults);
+                    }
                     
                     if (isCancelled) break;
                     
@@ -3121,8 +3133,13 @@ Now translate the following text:`
                 progressSection.style.display = 'none';
                 controlButtons.style.display = 'none';
                 
-                let message = `✅ 모든 번역이 완료되었습니다!\n\n${totalFilesProcessed}개 파일 × ${selectedLanguages.length}개 언어 = 총 ${totalTranslationsCompleted}개 파일이 다운로드되었습니다.`;
-                alert(message);
+                const hasFailures = showFailureInfo();
+                if (hasFailures) {
+                    alert(`⚠️ 일부 블록 번역에 실패했습니다.\n\n${totalTranslationsCompleted}개 파일은 다운로드되었습니다. "실패한 블록 재시도" 버튼을 눌러 실패한 부분만 다시 시도할 수 있습니다.`);
+                } else {
+                    let message = `✅ 모든 번역이 완료되었습니다!\n\n${totalFilesProcessed}개 파일 × ${selectedLanguages.length}개 언어 = 총 ${totalTranslationsCompleted}개 파일이 다운로드되었습니다.`;
+                    alert(message);
+                }
                 
             } catch (error) {
                 if (error.message === '번역이 취소되었습니다.') {
