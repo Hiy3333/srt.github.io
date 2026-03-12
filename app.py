@@ -7,6 +7,7 @@ import os
 import io
 import zipfile
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from flask import Flask, render_template, request, send_file, jsonify, session
 from werkzeug.utils import secure_filename
@@ -93,20 +94,20 @@ def translate():
         original_filename = os.path.splitext(secure_filename(file.filename))[0]
         
         with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
-            # 선택된 언어별로 번역
-            for lang_code in selected_languages:
-                if lang_code not in LANGUAGES:
-                    continue
-                
-                # 번역 수행 (웹 버전에서는 verbose=False)
-                translated_blocks = translator.translate_srt_blocks(blocks, lang_code, verbose=False)
-                
-                # SRT 형식으로 변환
-                translated_srt = SRTParser.generate(translated_blocks)
-                
-                # ZIP 파일에 추가
-                filename = f"{original_filename}_{lang_code}.srt"
-                zip_file.writestr(filename, translated_srt)
+            # 선택된 언어별로 병렬 번역
+            valid_langs = [lc for lc in selected_languages if lc in LANGUAGES]
+            
+            def translate_lang(lang_code):
+                translated = translator.translate_srt_blocks(blocks, lang_code, verbose=False)
+                return lang_code, translated
+            
+            with ThreadPoolExecutor(max_workers=min(6, len(valid_langs))) as executor:
+                futures = {executor.submit(translate_lang, lc): lc for lc in valid_langs}
+                for future in as_completed(futures):
+                    lang_code, translated_blocks = future.result()
+                    translated_srt = SRTParser.generate(translated_blocks)
+                    filename = f"{original_filename}_{lang_code}.srt"
+                    zip_file.writestr(filename, translated_srt)
         
         # ZIP 파일을 전송 준비
         zip_buffer.seek(0)

@@ -5,6 +5,7 @@ GPT API를 사용하여 한글 자막을 여러 언어로 번역합니다.
 
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List, Tuple
 from openai import OpenAI
 
@@ -216,24 +217,26 @@ class SRTTranslatorApp:
         # 입력 파일명에서 확장자 제거
         base_name = os.path.splitext(os.path.basename(input_file))[0]
         
-        # 각 언어로 번역 및 저장
-        for lang_code, lang_name in self.translator.LANGUAGES.items():
-            print(f"\n{'='*50}")
-            print(f"{lang_name} 번역 작업 시작")
-            print(f"{'='*50}")
-            
-            # 번역 수행
+        # 각 언어로 병렬 번역 및 저장
+        lang_items = list(self.translator.LANGUAGES.items())
+        
+        def translate_and_save(lang_code: str, lang_name: str):
+            print(f"\n{lang_name} 번역 작업 시작...")
             translated_blocks = self.translator.translate_srt_blocks(blocks, lang_code)
-            
-            # SRT 형식으로 변환
             translated_srt = SRTParser.generate(translated_blocks)
-            
-            # 파일 저장
             output_file = os.path.join(output_dir, f"{base_name}_{lang_code}.srt")
             with open(output_file, 'w', encoding='utf-8') as f:
                 f.write(translated_srt)
-            
             print(f"✓ 저장 완료: {output_file}")
+            return output_file
+        
+        with ThreadPoolExecutor(max_workers=min(6, len(lang_items))) as executor:
+            futures = {
+                executor.submit(translate_and_save, lc, ln): (lc, ln)
+                for lc, ln in lang_items
+            }
+            for future in as_completed(futures):
+                future.result()
         
         print(f"\n{'='*50}")
         print("모든 번역이 완료되었습니다!")
